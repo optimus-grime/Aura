@@ -1,0 +1,37 @@
+{
+  "entities": {
+    "Report": {
+      "title": "Saved Report",
+      "description": "A saved personality analysis report along with traits.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Auth ID of the user who owns this report"
+        },
+        "date": {
+          "type": "string"
+        },
+        "report": {
+          "type": "object",
+          "properties": {
+            "mbti": { "type": "string" },
+            "bigFive": { "type": "object" },
+            "summary": { "type": "string" }
+          }
+        },
+        "createdAt": {
+          "type": "number",
+          "description": "Server timestamp of creation"
+        }
+      },
+      "required": ["userId", "date", "report", "createdAt"]
+    }
+  },
+  "firestore": {
+    "users/{userId}/reports/{reportId}": {
+      "schema": "Report",
+      "description": "User's individual reports"
+    }
+  }
+}

@@ -1,0 +1,45 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() { return request.auth != null; }
+    function existing() { return resource.data; }
+    function incoming() { return request.resource.data; }
+    function isValidId(id) { 
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
+    }
+
+    // Project Helpers
+    function isValidReport(data) {
+      return data.keys().hasAll(['userId', 'date', 'report']) &&
+             data.userId == request.auth.uid &&
+             data.date is string &&
+             data.date.size() <= 50 &&
+             data.report is map;
+    }
+
+    // Reports matching
+    match /users/{userId}/reports/{reportId} {
+      // Security Constraints:
+      // - Only the owner can manage their reports
+      allow get: if isSignedIn() && isValidId(userId) && isValidId(reportId) && userId == request.auth.uid;
+      
+      allow list: if isSignedIn() && isValidId(userId) && userId == request.auth.uid;
+      
+      allow create: if isSignedIn() && isValidId(userId) && isValidId(reportId) &&
+                    userId == request.auth.uid &&
+                    isValidReport(incoming());
+                    
+      allow delete: if isSignedIn() && isValidId(userId) && isValidId(reportId) &&
+                    userId == request.auth.uid;
+                    
+      allow update: if false; // Reports are immutable once generated
+    }
+  }
+}
