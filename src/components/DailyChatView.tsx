@@ -91,7 +91,7 @@ export function DailyChatView({ latestReport, onAnalyzeChat, isAnalyzing }: Dail
       const response = await fetch('/api/daily-chat', {
         method: 'POST',
         headers: {
-        'Authorization': `Bearer ${await auth.currentUser?.getIdToken()}`, 'Content-Type': 'application/json' },
+        'Authorization': `Bearer ${(await auth.currentUser?.getIdToken()) || ''}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           profile: latestReport,
           history: chatHistory.map(h => ({ role: h.role, text: h.text })),

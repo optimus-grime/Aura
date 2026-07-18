@@ -49,7 +49,7 @@ export function AnalysisReport({ report, onClose, autoDownload, onDownloadComple
       const response = await fetch('/api/report-chat', {
         method: 'POST',
         headers: {
-        'Authorization': `Bearer ${await auth.currentUser?.getIdToken()}`, 'Content-Type': 'application/json' },
+        'Authorization': `Bearer ${(await auth.currentUser?.getIdToken()) || ''}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           report,
           history: chatHistory.filter((m: any) => m.role !== 'model' || m.text !== chatHistory[0].text), // Pass only real convo

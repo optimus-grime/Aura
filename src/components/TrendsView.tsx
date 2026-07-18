@@ -133,7 +133,7 @@ export function TrendsView({ reports, onViewReport, onDeleteReport }: TrendsView
       const response = await fetch('/api/compare-reports', {
         method: 'POST',
         headers: {
-        'Authorization': `Bearer ${await auth.currentUser?.getIdToken()}`, 'Content-Type': 'application/json' },
+        'Authorization': `Bearer ${(await auth.currentUser?.getIdToken()) || ''}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ report1: rep1.report, report2: rep2.report }),
       });
       const data = await response.json();

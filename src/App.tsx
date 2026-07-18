@@ -15,7 +15,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useState, useEffect, useRef } from 'react';
 import { SavedReport, ReportData } from './types';
 import { auth } from './firebase';
-import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut } from 'firebase/auth';
 import { useFirebaseReports } from './hooks/useFirebaseReports';
 
 // Add to imports in App.tsx
@@ -78,6 +78,7 @@ export default function App() {
   }, [dailyReminderEnabled]);
 
   useEffect(() => {
+    getRedirectResult(auth).catch(e => console.error('Redirect result error:', e));
     const unsub = onAuthStateChanged(auth, u => {
       setUser(u);
     });
@@ -86,10 +87,13 @@ export default function App() {
 
   const login = async () => {
     try {
+      console.log("Starting login...");
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-    } catch (e) {
-      console.error(e);
+      provider.setCustomParameters({ prompt: 'select_account' });
+      await signInWithRedirect(auth, provider);
+    } catch (e: any) {
+      console.error("Login error:", e);
+      alert('Login failed: ' + e.message + ' (Code: ' + e.code + ')');
     }
   };
 
@@ -114,7 +118,7 @@ export default function App() {
       const response = await fetch('/api/analyze-text', {
         method: 'POST',
         headers: {
-        'Authorization': `Bearer ${await auth.currentUser?.getIdToken()}`,
+        'Authorization': `Bearer ${(await auth.currentUser?.getIdToken()) || ''}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ text: textInput, analyzePartner }),
@@ -309,6 +313,28 @@ export default function App() {
       </div>
 
       <div className="flex-1 w-full flex flex-col items-center justify-center relative z-10 max-w-2xl px-4">
+        {!user ? (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="w-full bg-slate-900/50 backdrop-blur-md rounded-3xl p-10 border border-slate-800 shadow-2xl flex flex-col items-center justify-center space-y-6 text-center"
+          >
+            <div className="w-16 h-16 rounded-2xl bg-cyan-500/10 flex items-center justify-center border border-cyan-500/20 mb-2">
+              <LogOut className="w-8 h-8 text-cyan-400" />
+            </div>
+            <h2 className="text-2xl font-semibold text-slate-200">Sign in to continue</h2>
+            <p className="text-slate-400 max-w-sm">
+              Aura requires authentication to securely store your personality reports and historical insights.
+            </p>
+            <button
+              onClick={login}
+              className="mt-4 px-8 py-3 rounded-full bg-cyan-500 text-slate-950 font-medium hover:bg-cyan-400 transition-colors shadow-lg shadow-cyan-500/20"
+            >
+              Sign in with Google
+            </button>
+          </motion.div>
+        ) : (
+          <>
         {activeTab === 'voice' && (
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
@@ -465,7 +491,7 @@ export default function App() {
                 const response = await fetch('/api/analyze-text', {
                   method: 'POST',
                   headers: {
-        'Authorization': `Bearer ${await auth.currentUser?.getIdToken()}`, 'Content-Type': 'application/json' },
+        'Authorization': `Bearer ${(await auth.currentUser?.getIdToken()) || ''}`, 'Content-Type': 'application/json' },
                   body: JSON.stringify({ text }),
                 });
                 const data = await response.json();
@@ -490,6 +516,8 @@ export default function App() {
 
         {activeTab === 'import' && (
           <CSVImporter onImportComplete={() => setActiveTab('trends')} />
+        )}
+          </>
         )}
       </div>
 

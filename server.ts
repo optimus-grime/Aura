@@ -1,10 +1,12 @@
+import { createProxyMiddleware } from 'http-proxy-middleware';
 import express from 'express';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import { WebSocketServer } from 'ws';
 import { GoogleGenAI, Modality, Type } from '@google/genai';
 import { createServer } from 'http';
-import admin from 'firebase-admin';
+import { initializeApp } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
 import fs_node from 'fs';
 import { fileURLToPath } from 'url';
 
@@ -15,7 +17,7 @@ try {
 } catch (e) {
   console.warn("Could not read firebase config, using default", e);
 }
-admin.initializeApp({ projectId });
+initializeApp({ projectId });
 
 const authenticateUser = async (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -25,12 +27,12 @@ const authenticateUser = async (req, res, next) => {
 
   const token = authHeader.split('Bearer ')[1];
   try {
-    const decodedToken = await admin.auth().verifyIdToken(token);
+    const decodedToken = await getAuth().verifyIdToken(token);
     req.user = decodedToken;
     next();
   } catch (error) {
-    console.error('Error verifying Firebase token:', error);
-    return res.status(403).json({ error: 'Unauthorized: Invalid token' });
+    console.error('Error verifying Firebase token:', error.message, error.code, error); fs_node.appendFileSync('auth_error.log', new Date().toISOString() + ' ' + error.message + '\n');
+    return res.status(403).json({ error: 'Unauthorized: Invalid token - ' + error.message });
   }
 };
 
@@ -38,6 +40,9 @@ const authenticateUser = async (req, res, next) => {
 async function startServer() {
   const app = express();
   const PORT = 3000;
+  
+
+
   
   const httpServer = createServer(app);
   const wss = new WebSocketServer({ server: httpServer, path: '/live' });
@@ -648,7 +653,7 @@ Ask follow-up questions designed to understand their worldview and daily decisio
       const url = new URL(req.url, `http://${req.headers.host}`);
       const token = url.searchParams.get('token');
       if (!token) throw new Error("Missing token");
-      await admin.auth().verifyIdToken(token);
+      await getAuth().verifyIdToken(token);
     } catch (error) {
       console.error("WebSocket auth failed:", error.message);
       clientWs.close(1008, "Unauthorized");

@@ -44,7 +44,7 @@ export function CSVImporter({ onImportComplete }: { onImportComplete: () => void
           const response = await fetch('/api/import-csv', {
             method: 'POST',
             headers: {
-        'Authorization': `Bearer ${await auth.currentUser?.getIdToken()}`, 'Content-Type': 'application/json' },
+        'Authorization': `Bearer ${(await auth.currentUser?.getIdToken()) || ''}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ csvContent: jsonString, filename: file.name, analyzePartner })
           });
 

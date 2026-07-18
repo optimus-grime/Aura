@@ -56,7 +56,7 @@ export function LayeredInsightsView({ reports, saveReport }: LayeredInsightsView
       const res = await fetch('/api/layered-insights', {
         method: 'POST',
         headers: {
-        'Authorization': `Bearer ${await auth.currentUser?.getIdToken()}`, 'Content-Type': 'application/json' },
+        'Authorization': `Bearer ${(await auth.currentUser?.getIdToken()) || ''}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ reports: simplifiedReports })
       });
 
@@ -149,7 +149,7 @@ export function LayeredInsightsView({ reports, saveReport }: LayeredInsightsView
       const response = await fetch('/api/summarize-layered-insights', {
         method: 'POST',
         headers: {
-        'Authorization': `Bearer ${await auth.currentUser?.getIdToken()}`, 'Content-Type': 'application/json' },
+        'Authorization': `Bearer ${(await auth.currentUser?.getIdToken()) || ''}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ insightData })
       });
 

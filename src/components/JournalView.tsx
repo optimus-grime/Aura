@@ -34,7 +34,7 @@ export function JournalView({ latestReport }: JournalViewProps) {
       const response = await fetch('/api/journal-prompts', {
         method: 'POST',
         headers: {
-        'Authorization': `Bearer ${await auth.currentUser?.getIdToken()}`, 'Content-Type': 'application/json' },
+        'Authorization': `Bearer ${(await auth.currentUser?.getIdToken()) || ''}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ profile: latestReport }),
       });
       if (!response.ok) {
@@ -90,7 +90,7 @@ export function JournalView({ latestReport }: JournalViewProps) {
       const response = await fetch('/api/journal-chat', {
         method: 'POST',
         headers: {
-        'Authorization': `Bearer ${await auth.currentUser?.getIdToken()}`, 'Content-Type': 'application/json' },
+        'Authorization': `Bearer ${(await auth.currentUser?.getIdToken()) || ''}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           profile: latestReport,
           prompt: selectedPrompt,

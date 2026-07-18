@@ -21,7 +21,7 @@ export function StrategiesView({ latestReport }: StrategiesViewProps) {
       const response = await fetch('/api/strategies', {
         method: 'POST',
         headers: {
-        'Authorization': `Bearer ${await auth.currentUser?.getIdToken()}`, 'Content-Type': 'application/json' },
+        'Authorization': `Bearer ${(await auth.currentUser?.getIdToken()) || ''}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ profile: latestReport }),
       });
       if (!response.ok) {
