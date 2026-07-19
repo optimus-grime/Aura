@@ -121,7 +121,7 @@ export function LayeredInsightsView({ reports, saveReport }: LayeredInsightsView
       setIsDownloadingPdf(true);
       const canvas = await toCanvas(reportRef.current, {
         pixelRatio: 2,
-        backgroundColor: '#0f172a',
+        backgroundColor: '#ffffff',
       });
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF({
@@ -173,44 +173,44 @@ export function LayeredInsightsView({ reports, saveReport }: LayeredInsightsView
 
   if (!insightData && !isLoading) {
     return (
-      <div className="w-full flex flex-col items-center justify-center py-20 px-4 text-center">
-        <div className="w-16 h-16 bg-cyan-500/10 rounded-full flex items-center justify-center mb-6 border border-cyan-500/20">
-          <Layers className="w-8 h-8 text-cyan-400" />
+      <div className="w-full flex flex-col items-center justify-center py-20 px-6 text-center">
+        <div className="w-16 h-16 bg-blue-600/10 rounded-full flex items-center justify-center mb-6 border border-blue-600/20">
+          <Layers className="w-8 h-8 text-blue-600" />
         </div>
-        <h2 className="text-2xl font-bold text-slate-200 mb-4">Layered Insights</h2>
-        <p className="text-slate-400 max-w-md mb-8 leading-relaxed">
+        <h2 className="text-2xl font-bold text-slate-900 mb-4">Layered Insights</h2>
+        <p className="text-slate-600 max-w-md mb-8 leading-relaxed">
           Uncover underlying patterns and connections across all your interactions. Explore different perspectives, potential scenarios, and make more informed decisions based on your accumulated data.
         </p>
         {error && (
-            <div className="flex items-center space-x-2 text-rose-400 mb-6 bg-rose-500/10 px-4 py-3 rounded-xl border border-rose-500/20">
+            <div className="flex items-center space-x-3 text-rose-600 mb-6 bg-rose-50 px-6 py-3 rounded-xl border border-rose-200">
                 <AlertCircle className="w-4 h-4" />
-                <span className="text-sm font-medium">{error}</span>
+                <span className="text-base font-medium">{error}</span>
             </div>
         )}
         <button
           onClick={generateInsights}
           disabled={reports.length === 0}
-          className="flex items-center space-x-3 px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-slate-950 font-bold rounded-2xl transition-all shadow-lg shadow-cyan-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center space-x-3 px-8 py-6 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-600 hover:to-blue-400 text-slate-950 font-bold rounded-2xl transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Sparkles className="w-5 h-5" />
           <span>Generate Deep Analysis</span>
         </button>
         {reports.length === 0 && (
-          <p className="text-xs text-slate-500 mt-4">You need to log at least one entry first.</p>
+          <p className="text-sm text-slate-500 mt-4">You need to log at least one entry first.</p>
         )}
       </div>
     );
   }
 
   return (
-    <div className="w-full flex flex-col space-y-6 pb-20 mt-8">
+    <div className="w-full flex flex-col space-y-8 pb-20 mt-8">
       <div className="flex items-center justify-between mb-4 px-1">
         <div>
-          <h2 className="text-2xl font-bold text-slate-100 flex items-center gap-3">
-            <Layers className="w-6 h-6 text-cyan-400" />
+          <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-3">
+            <Layers className="w-6 h-6 text-blue-600" />
             Layered Insights
           </h2>
-          <p className="text-slate-400 text-sm mt-1">A nuanced understanding of your patterns</p>
+          <p className="text-slate-600 text-base mt-1">A nuanced understanding of your patterns</p>
         </div>
         <div className="flex space-x-3">
           {insightData && (
@@ -218,7 +218,7 @@ export function LayeredInsightsView({ reports, saveReport }: LayeredInsightsView
               <button
                 onClick={exportInsightsPdf}
                 disabled={isDownloadingPdf}
-                className="flex items-center space-x-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl transition-colors text-sm font-medium border border-slate-700/50 hover:border-slate-600 disabled:opacity-50"
+                className="flex items-center space-x-3 px-6 py-2 bg-slate-100 hover:bg-slate-200 text-slate-900 rounded-xl transition-colors text-base font-medium border border-slate-200 hover:border-slate-300 disabled:opacity-50"
                 title="Export as PDF"
               >
                 <FileText className="w-4 h-4" />
@@ -226,7 +226,7 @@ export function LayeredInsightsView({ reports, saveReport }: LayeredInsightsView
               </button>
               <button
                 onClick={exportInsights}
-                className="flex items-center space-x-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl transition-colors text-sm font-medium border border-slate-700/50 hover:border-slate-600"
+                className="flex items-center space-x-3 px-6 py-2 bg-slate-100 hover:bg-slate-200 text-slate-900 rounded-xl transition-colors text-base font-medium border border-slate-200 hover:border-slate-300"
                 title="Export as Text File"
               >
                 <Download className="w-4 h-4" />
@@ -236,7 +236,7 @@ export function LayeredInsightsView({ reports, saveReport }: LayeredInsightsView
                 <button
                   onClick={summarizeAndSave}
                   disabled={isSummarizing || summarizeSuccess}
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-colors text-sm font-medium border ${summarizeSuccess ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700/50 hover:border-slate-600'} disabled:opacity-50`}
+                  className={`flex items-center space-x-3 px-6 py-2 rounded-xl transition-colors text-base font-medium border ${summarizeSuccess ? 'bg-emerald-500/20 text-emerald-600 border-emerald-500/50' : 'bg-slate-100 hover:bg-slate-200 text-slate-900 border-slate-200 hover:border-slate-300'} disabled:opacity-50`}
                   title="Summarize & Save to Reports"
                 >
                   {isSummarizing ? (
@@ -244,7 +244,7 @@ export function LayeredInsightsView({ reports, saveReport }: LayeredInsightsView
                   ) : summarizeSuccess ? (
                     <Save className="w-4 h-4" />
                   ) : (
-                    <Save className="w-4 h-4 text-cyan-400" />
+                    <Save className="w-4 h-4 text-blue-600" />
                   )}
                   <span>
                     {isSummarizing ? 'Saving...' : summarizeSuccess ? 'Saved' : 'Summarize & Save'}
@@ -256,18 +256,18 @@ export function LayeredInsightsView({ reports, saveReport }: LayeredInsightsView
           <button
             onClick={generateInsights}
             disabled={isLoading}
-            className="flex items-center space-x-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl transition-colors text-sm font-medium border border-slate-700/50 hover:border-slate-600 disabled:opacity-50"
+            className="flex items-center space-x-3 px-6 py-2 bg-slate-100 hover:bg-slate-200 text-slate-900 rounded-xl transition-colors text-base font-medium border border-slate-200 hover:border-slate-300 disabled:opacity-50"
           >
-            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 text-cyan-400" />}
+            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 text-blue-600" />}
             <span>{isLoading ? 'Analyzing...' : 'Refresh'}</span>
           </button>
         </div>
       </div>
 
       {isLoading && !insightData && (
-        <div className="flex flex-col items-center justify-center py-20 px-4 h-64 bg-slate-900/50 rounded-3xl border border-slate-800/50 shadow-inner">
-          <Loader2 className="w-8 h-8 text-cyan-400 animate-spin mb-4" />
-          <p className="text-slate-400 text-sm animate-pulse text-center max-w-sm">
+        <div className="flex flex-col items-center justify-center py-20 px-6 h-64 bg-white/80 rounded-3xl border border-slate-200/50 shadow-inner">
+          <Loader2 className="w-8 h-8 text-blue-600 animate-spin mb-4" />
+          <p className="text-slate-600 text-base animate-pulse text-center max-w-sm">
             Synthesizing historical data across multiple dimensions to uncover deeper patterns...
           </p>
         </div>
@@ -278,72 +278,72 @@ export function LayeredInsightsView({ reports, saveReport }: LayeredInsightsView
           ref={reportRef}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="space-y-6"
+          className="space-y-8"
         >
           {/* Surface Level */}
-          <div className="bg-slate-900/60 rounded-3xl p-6 md:p-8 border border-slate-800/80 shadow-xl relative overflow-hidden group">
+          <div className="bg-white/60 rounded-3xl p-8 md:p-8 border border-slate-200/80 shadow-xl relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none">
-              <Search className="w-32 h-32 text-cyan-400" />
+              <Search className="w-32 h-32 text-blue-600" />
             </div>
-            <h3 className="text-lg font-semibold text-slate-200 mb-4 flex items-center gap-3">
-              <div className="p-2 bg-slate-800 rounded-lg text-cyan-400 border border-slate-700/50 shadow-inner">
+            <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-3">
+              <div className="p-2 bg-slate-100 rounded-lg text-blue-600 border border-slate-200 shadow-inner">
                 <Search className="w-5 h-5" />
               </div>
               The Surface Level
             </h3>
-            <p className="text-slate-300 leading-relaxed text-[15px] md:text-base relative z-10 pl-14">
+            <p className="text-slate-800 leading-relaxed text-[15px] md:text-base relative z-10 pl-14">
               {insightData.surfaceLevel}
             </p>
           </div>
 
           {/* Underlying Patterns */}
-          <div className="bg-slate-900/60 rounded-3xl p-6 md:p-8 border border-slate-800/80 shadow-xl relative overflow-hidden group">
+          <div className="bg-white/60 rounded-3xl p-8 md:p-8 border border-slate-200/80 shadow-xl relative overflow-hidden group">
              <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none">
               <Layers className="w-32 h-32 text-indigo-400" />
             </div>
-            <h3 className="text-lg font-semibold text-slate-200 mb-4 flex items-center gap-3">
-              <div className="p-2 bg-slate-800 rounded-lg text-indigo-400 border border-slate-700/50 shadow-inner">
+            <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-3">
+              <div className="p-2 bg-slate-100 rounded-lg text-indigo-400 border border-slate-200 shadow-inner">
                 <Layers className="w-5 h-5" />
               </div>
               Underlying Patterns
             </h3>
-            <p className="text-slate-300 leading-relaxed text-[15px] md:text-base relative z-10 pl-14">
+            <p className="text-slate-800 leading-relaxed text-[15px] md:text-base relative z-10 pl-14">
               {insightData.underlyingPatterns}
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
              {/* Multiple Perspectives */}
-             <div className="bg-slate-900/60 rounded-3xl p-6 border border-slate-800/80 shadow-xl">
-                 <h3 className="text-lg font-semibold text-slate-200 mb-5 flex items-center gap-3">
-                    <div className="p-2 bg-slate-800 rounded-lg text-amber-400 border border-slate-700/50 shadow-inner">
+             <div className="bg-white/60 rounded-3xl p-8 border border-slate-200/80 shadow-xl">
+                 <h3 className="text-lg font-semibold text-slate-900 mb-5 flex items-center gap-3">
+                    <div className="p-2 bg-slate-100 rounded-lg text-amber-400 border border-slate-200 shadow-inner">
                         <Compass className="w-4 h-4" />
                     </div>
                     Multiple Perspectives
                  </h3>
-                 <ul className="space-y-4">
+                 <ul className="space-y-8">
                     {insightData.multiplePerspectives.map((perspective, idx) => (
-                        <li key={idx} className="flex gap-4 p-4 bg-slate-800/40 rounded-2xl border border-slate-700/30">
+                        <li key={idx} className="flex gap-4 p-8 bg-slate-100/40 rounded-2xl border border-slate-200">
                             <span className="text-amber-400/50 font-bold shrink-0">{idx + 1}.</span>
-                            <span className="text-slate-300 text-sm leading-relaxed">{perspective}</span>
+                            <span className="text-slate-800 text-base leading-relaxed">{perspective}</span>
                         </li>
                     ))}
                  </ul>
              </div>
 
              {/* Potential Scenarios */}
-             <div className="bg-slate-900/60 rounded-3xl p-6 border border-slate-800/80 shadow-xl">
-                 <h3 className="text-lg font-semibold text-slate-200 mb-5 flex items-center gap-3">
-                    <div className="p-2 bg-slate-800 rounded-lg text-fuchsia-400 border border-slate-700/50 shadow-inner">
+             <div className="bg-white/60 rounded-3xl p-8 border border-slate-200/80 shadow-xl">
+                 <h3 className="text-lg font-semibold text-slate-900 mb-5 flex items-center gap-3">
+                    <div className="p-2 bg-slate-100 rounded-lg text-fuchsia-400 border border-slate-200 shadow-inner">
                         <Map className="w-4 h-4" />
                     </div>
                     Potential Scenarios
                  </h3>
-                 <ul className="space-y-4">
+                 <ul className="space-y-8">
                     {insightData.potentialScenarios.map((scenario, idx) => (
-                        <li key={idx} className="flex gap-4 p-4 bg-slate-800/40 rounded-2xl border border-slate-700/30">
+                        <li key={idx} className="flex gap-4 p-8 bg-slate-100/40 rounded-2xl border border-slate-200">
                             <span className="text-fuchsia-400/50 font-bold shrink-0">{idx + 1}.</span>
-                            <span className="text-slate-300 text-sm leading-relaxed">{scenario}</span>
+                            <span className="text-slate-800 text-base leading-relaxed">{scenario}</span>
                         </li>
                     ))}
                  </ul>
@@ -351,18 +351,18 @@ export function LayeredInsightsView({ reports, saveReport }: LayeredInsightsView
           </div>
 
           {/* Informed Decisions */}
-          <div className="bg-slate-900/60 rounded-3xl p-6 md:p-8 border border-slate-800/80 shadow-xl">
-            <h3 className="text-lg font-semibold text-slate-200 mb-5 flex items-center gap-3">
-              <div className="p-2 bg-cyan-900/40 rounded-lg text-cyan-400 border border-cyan-500/20 shadow-inner">
+          <div className="bg-white/60 rounded-3xl p-8 md:p-8 border border-slate-200/80 shadow-xl">
+            <h3 className="text-lg font-semibold text-slate-900 mb-5 flex items-center gap-3">
+              <div className="p-2 bg-blue-200/40 rounded-lg text-blue-600 border border-blue-600/20 shadow-inner">
                 <Lightbulb className="w-5 h-5" />
               </div>
               Informed Decisions & Actions
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {insightData.informedDecisions.map((decision, idx) => (
-                    <div key={idx} className="bg-slate-800/60 p-5 rounded-2xl border border-slate-700/50 flex flex-col justify-between">
-                         <p className="text-slate-300 text-[15px] leading-relaxed mb-4">{decision}</p>
-                         <div className="w-8 h-1 bg-cyan-500/50 rounded-full mt-auto"></div>
+                    <div key={idx} className="bg-slate-100/60 p-5 rounded-2xl border border-slate-200 flex flex-col justify-between">
+                         <p className="text-slate-800 text-[15px] leading-relaxed mb-4">{decision}</p>
+                         <div className="w-8 h-1 bg-blue-600/50 rounded-full mt-auto"></div>
                     </div>
                 ))}
             </div>

@@ -15,7 +15,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useState, useEffect, useRef } from 'react';
 import { SavedReport, ReportData } from './types';
 import { auth } from './firebase';
-import { GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'firebase/auth';
 import { useFirebaseReports } from './hooks/useFirebaseReports';
 
 // Add to imports in App.tsx
@@ -70,15 +70,30 @@ export default function App() {
     const interval = setInterval(checkReminder, 60 * 60 * 1000); // Check every hour
     // Also check on mount with a slight delay
     const timeoutId = setTimeout(checkReminder, 5000); 
-    
+
     return () => {
       clearInterval(interval);
       clearTimeout(timeoutId);
     };
   }, [dailyReminderEnabled]);
 
+  // Derived mood for RobotFace
+  let currentMood: 'neutral' | 'calm' | 'energetic' | 'anxious' = 'neutral';
+  if (savedReports && savedReports.length > 0) {
+    const latest = savedReports[0].report;
+    if (latest.readiness && latest.readiness.score) {
+      if (latest.readiness.score >= 75) currentMood = 'energetic';
+      else if (latest.readiness.score >= 45) currentMood = 'calm';
+      else currentMood = 'anxious';
+    } else if (latest.sentimentAnalysis && latest.sentimentAnalysis.overallSentiment) {
+      const sent = latest.sentimentAnalysis.overallSentiment.toLowerCase();
+      if (sent.includes('positive') || sent.includes('joy') || sent.includes('happy') || sent.includes('energetic')) currentMood = 'energetic';
+      else if (sent.includes('calm') || sent.includes('peace') || sent.includes('neutral')) currentMood = 'calm';
+      else if (sent.includes('negative') || sent.includes('anxious') || sent.includes('tired')) currentMood = 'anxious';
+    }
+  }
+
   useEffect(() => {
-    getRedirectResult(auth).catch(e => console.error('Redirect result error:', e));
     const unsub = onAuthStateChanged(auth, u => {
       setUser(u);
     });
@@ -90,7 +105,7 @@ export default function App() {
       console.log("Starting login...");
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
-      await signInWithRedirect(auth, provider);
+      await signInWithPopup(auth, provider);
     } catch (e: any) {
       console.error("Login error:", e);
       alert('Login failed: ' + e.message + ' (Code: ' + e.code + ')');
@@ -140,14 +155,14 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-50 flex flex-col items-center p-6 selection:bg-cyan-900 overflow-hidden relative">
+    <div className="min-h-screen bg-gray-50 text-slate-900 flex flex-col items-center p-8 selection:bg-blue-200 overflow-hidden relative">
       {/* Menu Button */}
       <div className="absolute top-4 left-6 z-40">
         <button 
           onClick={() => setIsDrawerOpen(true)}
-          className="p-2.5 bg-slate-900/80 border border-slate-800 rounded-xl hover:bg-slate-800 backdrop-blur-md transition group shadow-lg"
+          className="p-2.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-100 backdrop-blur-md transition group shadow-lg"
         >
-          <Menu className="w-5 h-5 text-slate-300 group-hover:text-cyan-400" />
+          <Menu className="w-5 h-5 text-slate-800 group-hover:text-blue-600" />
         </button>
       </div>
 
@@ -160,18 +175,18 @@ export default function App() {
                animate={{ opacity: 1 }}
                exit={{ opacity: 0 }}
                onClick={() => setIsDrawerOpen(false)}
-               className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50"
+               className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50"
             />
             <motion.div 
                initial={{ x: '-100%' }}
                animate={{ x: 0 }}
                exit={{ x: '-100%' }}
                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-               className="fixed left-0 top-0 bottom-0 w-72 bg-slate-900 border-r border-slate-800 z-50 p-6 flex flex-col shadow-2xl"
+               className="fixed left-0 top-0 bottom-0 w-72 bg-white border-r border-slate-200 z-50 p-8 flex flex-col shadow-2xl"
             >
                <div className="flex items-center justify-between mb-10">
-                 <h2 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500">Aura Menu</h2>
-                 <button onClick={() => setIsDrawerOpen(false)} className="p-2 bg-slate-800/50 rounded-lg hover:bg-slate-700/50 text-slate-300 transition">
+                 <h2 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-blue-500">Aura Menu</h2>
+                 <button onClick={() => setIsDrawerOpen(false)} className="p-2 bg-slate-100 rounded-lg hover:bg-slate-200 text-slate-800 transition">
                     <X className="w-5 h-5" />
                  </button>
                </div>
@@ -191,22 +206,22 @@ export default function App() {
                    <button 
                      key={item.id}
                      onClick={() => { setActiveTab(item.id as any); setIsDrawerOpen(false); }}
-                     className={`flex items-center space-x-4 w-full p-3.5 rounded-xl transition-colors text-sm font-medium ${
+                     className={`flex items-center space-x-4 w-full p-3.5 rounded-xl transition-colors text-base font-medium ${
                         activeTab === item.id 
-                          ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shadow-inner' 
-                          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 border border-transparent'
+                          ? 'bg-blue-600/10 text-blue-600 border border-blue-600/20 shadow-inner' 
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent'
                      }`}
                    >
-                     <item.icon className={`w-5 h-5 ${activeTab === item.id ? 'text-cyan-400' : 'opacity-70'}`} />
+                     <item.icon className={`w-5 h-5 ${activeTab === item.id ? 'text-blue-600' : 'opacity-70'}`} />
                      <span>{item.label}</span>
                    </button>
                  ))}
                </div>
 
-               <div className="mt-auto pt-6 border-t border-slate-800">
+               <div className="mt-auto pt-6 border-t border-slate-200">
                  <button 
                    onClick={() => { setShowSettings(true); setIsDrawerOpen(false); }}
-                   className="flex items-center space-x-4 w-full p-3.5 rounded-xl transition-colors text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 border border-transparent"
+                   className="flex items-center space-x-4 w-full p-3.5 rounded-xl transition-colors text-base font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent"
                  >
                    <Settings className="w-5 h-5 opacity-70" />
                    <span>Settings</span>
@@ -220,52 +235,52 @@ export default function App() {
       {/* Settings Modal */}
       <AnimatePresence>
         {showSettings && (
-           <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+           <div className="fixed inset-0 z-[60] flex items-center justify-center p-8">
              <motion.div 
                initial={{ opacity: 0 }}
                animate={{ opacity: 1 }}
                exit={{ opacity: 0 }}
                onClick={() => setShowSettings(false)}
-               className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm"
+               className="fixed inset-0 bg-white backdrop-blur-sm"
              />
              <motion.div 
                initial={{ opacity: 0, scale: 0.95 }}
                animate={{ opacity: 1, scale: 1 }}
                exit={{ opacity: 0, scale: 0.95 }}
-               className="bg-slate-900 border border-slate-700/50 rounded-2xl w-full max-w-md p-6 relative z-10 shadow-2xl"
+               className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-8 relative z-10 shadow-2xl"
              >
                 <div className="flex items-center justify-between mb-8">
-                  <h3 className="text-xl font-semibold text-slate-100 flex items-center gap-2">
-                    <Settings className="w-5 h-5 text-cyan-400" />
+                  <h3 className="text-xl font-semibold text-slate-900 flex items-center gap-2">
+                    <Settings className="w-5 h-5 text-blue-600" />
                     Settings
                   </h3>
-                  <button onClick={() => setShowSettings(false)} className="text-slate-400 hover:text-slate-200">
+                  <button onClick={() => setShowSettings(false)} className="text-slate-600 hover:text-slate-900">
                     <X className="w-5 h-5" />
                   </button>
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-8">
                   {/* Daily Reminder Toggle */}
-                  <div className="flex items-center justify-between bg-slate-800/50 p-4 rounded-xl border border-slate-700/30">
+                  <div className="flex items-center justify-between bg-slate-100 p-8 rounded-xl border border-slate-200">
                     <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-lg ${dailyReminderEnabled ? 'bg-cyan-500/10 text-cyan-400' : 'bg-slate-800 text-slate-500'}`}>
+                      <div className={`p-2 rounded-lg ${dailyReminderEnabled ? 'bg-blue-600/10 text-blue-600' : 'bg-slate-100 text-slate-500'}`}>
                          {dailyReminderEnabled ? <Bell className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
                       </div>
                       <div>
-                        <p className="text-slate-200 font-medium text-sm">Daily Reminders</p>
-                        <p className="text-slate-400 text-xs mt-0.5">Nudge me to complete my daily chat</p>
+                        <p className="text-slate-900 font-medium text-base">Daily Reminders</p>
+                        <p className="text-slate-600 text-sm mt-0.5">Nudge me to complete my daily chat</p>
                       </div>
                     </div>
                     <button 
                       onClick={() => setDailyReminderEnabled(!dailyReminderEnabled)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${dailyReminderEnabled ? 'bg-cyan-500' : 'bg-slate-700'}`}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${dailyReminderEnabled ? 'bg-blue-600' : 'bg-slate-700'}`}
                     >
                       <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${dailyReminderEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
                     </button>
                   </div>
                   
                   {Notification.permission === 'denied' && (
-                    <p className="text-xs text-rose-400 bg-rose-500/10 p-3 rounded-lg border border-rose-500/20">
+                    <p className="text-sm text-rose-600 bg-rose-50 p-3 rounded-lg border border-rose-200">
                        You have blocked notifications in your browser. Please enable them in your browser settings to use this feature.
                     </p>
                   )}
@@ -279,10 +294,10 @@ export default function App() {
       <div className="absolute top-4 right-6 z-40">
         {user ? (
           <div className="flex items-center space-x-4">
-            <span className="text-slate-400 text-sm hidden md:inline">{user.email}</span>
+            <span className="text-slate-600 text-base hidden md:inline">{user.email}</span>
             <button
               onClick={logout}
-              className="flex items-center space-x-2 text-sm text-slate-300 hover:text-white px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 transition"
+              className="flex items-center space-x-3 text-base text-white px-4 py-2 rounded-full bg-blue-600 hover:bg-blue-700 transition shadow-md border border-blue-500/20 font-medium"
             >
               <LogOut className="w-4 h-4" />
               <span>Sign out</span>
@@ -291,7 +306,7 @@ export default function App() {
         ) : (
           <button
             onClick={login}
-            className="text-sm font-medium text-slate-900 bg-cyan-500 hover:bg-cyan-400 px-4 py-1.5 rounded-full transition shadow-lg shadow-cyan-500/20"
+            className="text-base font-medium text-slate-900 bg-blue-600 hover:bg-blue-600 px-6 py-1.5 rounded-full transition shadow-lg shadow-blue-600/20"
           >
             Sign in
           </button>
@@ -300,11 +315,20 @@ export default function App() {
 
       {/* Header and Tabs */}
       <div className="w-full max-w-2xl text-center space-y-6 z-20 mt-4 mb-4">
-        <div className="space-y-4">
-          <h1 className="text-4xl md:text-5xl font-mono tracking-tighter font-semibold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+        <div className="space-y-6 flex flex-col items-center">
+          <h1 className="text-4xl md:text-5xl font-mono tracking-tighter font-semibold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-500">
             Aura
           </h1>
-          <p className="text-slate-400 text-sm md:text-base max-w-md mx-auto font-sans">
+          <div className="relative my-8">
+            <RobotFace 
+              isAiSpeaking={isSpeaking} 
+              isUserSpeaking={userIsSpeaking} 
+              isConnected={true} 
+              exaggerated={true}
+              mood={currentMood}
+            />
+          </div>
+          <p className="text-slate-600 text-base md:text-base max-w-md mx-auto font-sans">
             Conversational Personality Analyzer. She listens, adapts, and learns about who you truly are through casual dialogue.
           </p>
         </div>
@@ -312,23 +336,23 @@ export default function App() {
 
       </div>
 
-      <div className="flex-1 w-full flex flex-col items-center justify-center relative z-10 max-w-2xl px-4">
+      <div className="flex-1 w-full flex flex-col items-center justify-center relative z-10 max-w-2xl px-6">
         {!user ? (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="w-full bg-slate-900/50 backdrop-blur-md rounded-3xl p-10 border border-slate-800 shadow-2xl flex flex-col items-center justify-center space-y-6 text-center"
+            className="w-full bg-white/80 backdrop-blur-md rounded-3xl p-10 border border-slate-200 shadow-2xl flex flex-col items-center justify-center space-y-8 text-center"
           >
-            <div className="w-16 h-16 rounded-2xl bg-cyan-500/10 flex items-center justify-center border border-cyan-500/20 mb-2">
-              <LogOut className="w-8 h-8 text-cyan-400" />
+            <div className="w-16 h-16 rounded-2xl bg-blue-600/10 flex items-center justify-center border border-blue-600/20 mb-2">
+              <LogOut className="w-8 h-8 text-blue-600" />
             </div>
-            <h2 className="text-2xl font-semibold text-slate-200">Sign in to continue</h2>
-            <p className="text-slate-400 max-w-sm">
+            <h2 className="text-2xl font-semibold text-slate-900">Sign in to continue</h2>
+            <p className="text-slate-600 max-w-sm">
               Aura requires authentication to securely store your personality reports and historical insights.
             </p>
             <button
               onClick={login}
-              className="mt-4 px-8 py-3 rounded-full bg-cyan-500 text-slate-950 font-medium hover:bg-cyan-400 transition-colors shadow-lg shadow-cyan-500/20"
+              className="mt-4 px-8 py-3 rounded-full bg-blue-600 text-white font-medium hover:bg-blue-600 transition-colors shadow-lg shadow-blue-600/20"
             >
               Sign in with Google
             </button>
@@ -342,22 +366,17 @@ export default function App() {
             exit={{ opacity: 0, y: -10 }}
             className="w-full flex flex-col items-center space-y-12"
           >
-            {/* Robot Head Visualization */}
-            <RobotFace 
-              isAiSpeaking={isSpeaking} 
-              isUserSpeaking={userIsSpeaking} 
-              isConnected={isConnected} 
-            />
+            {/* RobotFace moved to main header */}
 
             {/* Status & Controls */}
-            <div className="flex flex-col items-center space-y-6">
+            <div className="flex flex-col items-center space-y-8">
               <AnimatePresence mode="wait">
                 {isError ? (
                    <motion.div
                      initial={{ opacity: 0, y: 10 }}
                      animate={{ opacity: 1, y: 0 }}
                      exit={{ opacity: 0, y: -10 }}
-                     className="flex items-center space-x-2 text-rose-400 bg-rose-400/10 px-4 py-2 rounded-full text-sm font-medium"
+                     className="flex items-center space-x-3 text-rose-600 bg-rose-50 px-6 py-2 rounded-full text-base font-medium"
                    >
                      <AlertCircle className="w-4 h-4" />
                      <span>Connection failed. Make sure your microphone is enabled and try again.</span>
@@ -367,9 +386,9 @@ export default function App() {
                      initial={{ opacity: 0, y: 10 }}
                      animate={{ opacity: 1, y: 0 }}
                      exit={{ opacity: 0, y: -10 }}
-                     className="flex items-center space-x-2 text-emerald-400 text-sm font-medium"
+                     className="flex items-center space-x-3 text-emerald-600 text-base font-medium"
                    >
-                     <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                     <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                      <span>
                         {isSpeaking ? 'Aura is speaking...' : userIsSpeaking ? 'Aura is listening...' : 'Aura is connected'}
                      </span>
@@ -379,7 +398,7 @@ export default function App() {
                      initial={{ opacity: 0, y: 10 }}
                      animate={{ opacity: 1, y: 0 }}
                      exit={{ opacity: 0, y: -10 }}
-                     className="text-slate-500 text-sm font-medium"
+                     className="text-slate-500 text-base font-medium"
                    >
                      Ready to begin your analysis.
                    </motion.div>
@@ -390,8 +409,8 @@ export default function App() {
                 onClick={isConnected ? disconnect : connect}
                 className={`group relative flex items-center justify-center w-16 h-16 rounded-full transition-all duration-300 shadow-xl ${
                   isConnected 
-                    ? 'bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 border border-rose-500/20' 
-                    : 'bg-cyan-500 text-slate-950 hover:bg-cyan-400 hover:scale-105 border border-cyan-400/50'
+                    ? 'bg-rose-50 text-rose-500 hover:bg-rose-500/20 border border-rose-200' 
+                    : 'bg-blue-600 text-white hover:bg-blue-600 hover:scale-105 border border-blue-600/50'
                 }`}
               >
                 {isConnected ? (
@@ -402,7 +421,7 @@ export default function App() {
                 
                 {/* Soft pulsing ring if disconnected */}
                 {!isConnected && (
-                  <span className="absolute inset-0 rounded-full animate-ping bg-cyan-400 opacity-20 group-hover:opacity-40" />
+                  <span className="absolute inset-0 rounded-full animate-ping bg-blue-600 opacity-20 group-hover:opacity-40" />
                 )}
               </button>
             </div>
@@ -416,10 +435,10 @@ export default function App() {
             exit={{ opacity: 0, y: -10 }}
             className="w-full flex flex-col mt-8"
           >
-            <div className="bg-gray-900/50 backdrop-blur-md rounded-2xl border border-gray-800 p-6 shadow-xl flex flex-col space-y-6">
+            <div className="bg-white backdrop-blur-md rounded-2xl border border-slate-200 p-8 shadow-xl flex flex-col space-y-8">
               <div className="space-y-2">
-                <h3 className="text-lg font-medium text-slate-200">History Analyzer</h3>
-                <p className="text-sm text-slate-400 leading-relaxed">
+                <h3 className="text-xl font-bold text-slate-900">History Analyzer</h3>
+                <p className="text-base text-slate-600 leading-relaxed">
                   Paste a chat log, an email thread, or any text you've written. Aura will analyze your linguistic markers to build a personality report.
                 </p>
               </div>
@@ -428,16 +447,16 @@ export default function App() {
                 value={textInput}
                 onChange={(e) => setTextInput(e.target.value)}
                 placeholder="Paste your text history here..."
-                className="w-full h-48 bg-slate-950/50 border border-slate-700/50 rounded-xl p-4 text-slate-300 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 resize-none font-sans text-sm"
+                className="w-full h-48 bg-gray-50/50 border border-slate-200 rounded-xl p-8 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600/50 resize-none font-sans text-base"
               />
 
               <div className="flex items-center justify-between mt-4">
-                <label className="flex items-center space-x-2 text-sm text-slate-300 cursor-pointer">
+                <label className="flex items-center space-x-3 text-base text-slate-800 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={analyzePartner}
                     onChange={(e) => setAnalyzePartner(e.target.checked)}
-                    className="w-4 h-4 rounded border-slate-600 bg-slate-900 text-cyan-500 focus:ring-cyan-500/50"
+                    className="w-4 h-4 rounded border-slate-300 bg-white text-blue-600 focus:ring-blue-600/50"
                   />
                   <span>Analyze the other person's personality</span>
                 </label>
@@ -445,7 +464,7 @@ export default function App() {
                 <button 
                   onClick={handleAnalyzeText}
                   disabled={!textInput.trim() || isAnalyzing}
-                  className="px-6 py-3 rounded-full bg-cyan-500 text-slate-950 font-medium hover:bg-cyan-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed border border-cyan-400/50 shadow-lg shadow-cyan-500/20 flex items-center space-x-2"
+                  className="px-6 py-3 rounded-full bg-blue-600 text-white font-medium hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed border border-blue-600/50 shadow-lg shadow-blue-600/20 flex items-center space-x-3"
                 >
                   <MessageSquare className="w-4 h-4" />
                   <span>{isAnalyzing ? 'Analyzing...' : 'Analyze Text Vibe'}</span>
@@ -527,7 +546,7 @@ export default function App() {
              initial={{ opacity: 0 }}
              animate={{ opacity: 1 }}
              exit={{ opacity: 0 }}
-             className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm"
+             className="absolute inset-0 z-50 flex items-center justify-center p-8 bg-white backdrop-blur-sm"
            >
               <AnalysisReport report={appReport} onClose={() => setShowReport(false)} />
            </motion.div>

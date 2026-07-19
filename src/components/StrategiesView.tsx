@@ -40,12 +40,12 @@ export function StrategiesView({ latestReport }: StrategiesViewProps) {
 
   if (!latestReport) {
     return (
-      <div className="w-full flex flex-col items-center justify-center py-20 text-center space-y-4">
-        <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center text-slate-500 mb-2">
+      <div className="w-full flex flex-col items-center justify-center py-20 text-center space-y-8">
+        <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 mb-2">
           <Target className="w-8 h-8" />
         </div>
-        <h3 className="text-xl font-medium text-slate-300">No Profile Found</h3>
-        <p className="text-slate-400 max-w-md leading-relaxed">
+        <h3 className="text-xl font-medium text-slate-800">No Profile Found</h3>
+        <p className="text-slate-600 max-w-md leading-relaxed">
           Complete a voice or text analysis first so we can generate strategic advice tailored specifically to your traits.
         </p>
       </div>
@@ -59,16 +59,16 @@ export function StrategiesView({ latestReport }: StrategiesViewProps) {
       exit={{ opacity: 0, y: -10 }}
       className="w-full flex items-start justify-center mt-8 pb-20"
     >
-      <div className="w-full max-w-3xl flex flex-col space-y-6">
+      <div className="w-full max-w-3xl flex flex-col space-y-8">
         
         {/* Header Section */}
-        <div className="flex items-center justify-between bg-gray-900/50 backdrop-blur-md rounded-2xl border border-gray-800 p-6 shadow-xl">
+        <div className="flex items-center justify-between bg-white backdrop-blur-md rounded-2xl border border-slate-200 p-8 shadow-xl">
             <div>
-              <h2 className="text-2xl font-medium text-slate-200 flex items-center gap-3">
-                 <Compass className="w-6 h-6 text-cyan-400" />
+              <h2 className="text-2xl font-medium text-slate-900 flex items-center gap-3">
+                 <Compass className="w-6 h-6 text-blue-600" />
                  Action Plan
               </h2>
-              <p className="text-slate-400 mt-2">
+              <p className="text-slate-600 mt-2">
                  Practical strategies for leveraging your {latestReport.mbti ? `${latestReport.mbti} ` : ''}traits in everyday life.
               </p>
             </div>
@@ -76,7 +76,7 @@ export function StrategiesView({ latestReport }: StrategiesViewProps) {
             <button 
               onClick={generateStrategies}
               disabled={isLoading}
-              className="px-6 py-3 rounded-full bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 font-medium transition-colors border border-cyan-500/30 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-3 rounded-full bg-blue-600/10 hover:bg-blue-600/20 text-blue-600 font-medium transition-colors border border-blue-600/30 flex items-center space-x-3 disabled:opacity-50 disabled:cursor-not-allowed"
             >
                 {isLoading ? (
                   <>
@@ -93,12 +93,12 @@ export function StrategiesView({ latestReport }: StrategiesViewProps) {
         </div>
 
         {error && (
-            <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl">
+            <div className="p-8 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl">
                Error: {error}
             </div>
         )}
 
-        <div className="space-y-6 flex flex-col">
+        <div className="space-y-8 flex flex-col">
           <AnimatePresence>
             {strategies.map((s, index) => (
               <motion.div 
@@ -106,18 +106,18 @@ export function StrategiesView({ latestReport }: StrategiesViewProps) {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="bg-gray-900/80 border border-gray-800 backdrop-blur-md rounded-2xl p-6 shadow-xl relative overflow-hidden group hover:border-cyan-800/50 transition-colors"
+                className="bg-white/80 border border-slate-200 backdrop-blur-md rounded-2xl p-8 shadow-xl relative overflow-hidden group hover:border-cyan-800/50 transition-colors"
               >
-                  <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-cyan-400 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <div className="flex items-center gap-3 mb-4 border-b border-gray-800 pb-4">
-                    <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center shrink-0 border border-slate-700">
-                      <Target className="w-5 h-5 text-cyan-400" />
+                  <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-blue-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="flex items-center gap-3 mb-4 border-b border-slate-200 pb-4">
+                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0 border border-slate-200">
+                      <Target className="w-5 h-5 text-blue-600" />
                     </div>
                     <div>
-                        <h3 className="text-lg font-medium text-slate-200">{s.situation}</h3>
+                        <h3 className="text-lg font-medium text-slate-900">{s.situation}</h3>
                         <div className="flex flex-wrap gap-2 mt-1.5">
                           {s.traitsLeveraged.map((t, idx) => (
-                             <span key={idx} className="px-2 py-0.5 rounded-md text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700">
+                             <span key={idx} className="px-2 py-0.5 rounded-md text-sm font-medium bg-slate-100 text-slate-800 border border-slate-200">
                                 {t}
                              </span>
                           ))}
@@ -127,7 +127,7 @@ export function StrategiesView({ latestReport }: StrategiesViewProps) {
                   
                   <div className="flex items-start gap-4">
                     <Lightbulb className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-                    <p className="text-slate-300 leading-relaxed text-sm">
+                    <p className="text-slate-800 leading-relaxed text-base">
                       {s.strategy}
                     </p>
                   </div>
@@ -136,7 +136,7 @@ export function StrategiesView({ latestReport }: StrategiesViewProps) {
           </AnimatePresence>
           
           {strategies.length === 0 && !isLoading && !error && (
-            <div className="flex flex-col items-center justify-center p-12 text-center text-slate-500 border border-dashed border-gray-800 rounded-2xl">
+            <div className="flex flex-col items-center justify-center p-12 text-center text-slate-500 border border-dashed border-slate-200 rounded-2xl">
                 <Compass className="w-8 h-8 mb-4 opacity-50" />
                 <p>Click "Generate Strategies" to plan how to make the most out of your natural traits.</p>
             </div>

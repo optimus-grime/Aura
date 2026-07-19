@@ -3,7 +3,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { MessageCircle, Send, Plus, BarChart3, Clock, RotateCcw } from 'lucide-react';
 import { ReportData } from '../types';
-import { RobotFace } from './RobotFace';
 
 interface DailyChatViewProps {
   latestReport: ReportData | null;
@@ -175,26 +174,13 @@ export function DailyChatView({ latestReport, onAnalyzeChat, isAnalyzing }: Dail
       exit={{ opacity: 0, y: -10 }}
       className="w-full flex items-start justify-center mt-8 pb-20"
     >
-      <div className="w-full max-w-3xl flex flex-col space-y-6">
-        
-        {/* Face */}
-        <div className="flex justify-center -mt-4 mb-2 scale-90">
-          <RobotFace 
-            isAiSpeaking={isChatLoading}
-            isUserSpeaking={chatInput.trim().length > 0}
-            isConnected={true}
-            exaggerated={true}
-          />
-        </div>
+      <div className="w-full max-w-3xl flex flex-col space-y-8">
 
         {/* Header Section */}
-        <div className="flex items-center justify-between bg-gray-900/50 backdrop-blur-md rounded-2xl border border-gray-800 p-6 shadow-xl">
+        <div className="flex items-center justify-between bg-white backdrop-blur-md rounded-2xl border border-slate-200 p-8 shadow-xl">
             <div>
-              <h2 className="text-2xl font-medium text-slate-200 flex items-center gap-3">
-                 <MessageCircle className="w-6 h-6 text-cyan-400" />
-                 Daily Check-In
-              </h2>
-              <p className="text-slate-400 mt-2 text-sm leading-relaxed max-w-lg">
+              <h2 className="text-2xl font-bold text-slate-900">Daily Check-In</h2>
+              <p className="text-slate-600 mt-2 text-base leading-relaxed max-w-lg">
                 Log your significant moments and feelings throughout the day. When you're ready, analyze the conversation to update your personality and emotional readiness profile in the Trends tab.
               </p>
             </div>
@@ -209,10 +195,10 @@ export function DailyChatView({ latestReport, onAnalyzeChat, isAnalyzing }: Dail
                       setTimeout(() => setConfirmReset(false), 3000);
                     }
                   }}
-                  className={`px-4 py-2 rounded-xl transition-colors border flex items-center justify-center space-x-2 text-sm font-medium ${
+                  className={`px-6 py-2 rounded-xl transition-colors border flex items-center justify-center space-x-3 text-base font-medium ${
                     confirmReset 
-                      ? 'bg-rose-500/20 text-rose-400 border-rose-500/50' 
-                      : 'text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 border-transparent hover:border-rose-500/20'
+                      ? 'bg-rose-500/20 text-rose-600 border-rose-500/50' 
+                      : 'text-slate-600 hover:text-rose-600 hover:bg-rose-50 border-transparent hover:border-rose-200'
                   }`}
                 >
                   <RotateCcw className={`w-4 h-4 ${confirmReset ? 'animate-spin-once' : ''}`} />
@@ -221,7 +207,7 @@ export function DailyChatView({ latestReport, onAnalyzeChat, isAnalyzing }: Dail
                 <button 
                   onClick={handleAnalyze}
                   disabled={isAnalyzing || chatHistory.filter(h => h.role === 'user').length === 0}
-                  className="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-medium transition-colors shadow-lg flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                  className="px-6 py-2 rounded-xl bg-blue-600 hover:bg-blue-600 text-white font-medium transition-colors shadow-lg flex items-center justify-center space-x-3 disabled:opacity-50 disabled:cursor-not-allowed text-base"
                 >
                   <BarChart3 className="w-4 h-4" />
                   <span>{isAnalyzing ? 'Analyzing...' : 'Analyze Day'}</span>
@@ -230,17 +216,17 @@ export function DailyChatView({ latestReport, onAnalyzeChat, isAnalyzing }: Dail
         </div>
 
         {/* Mood Selector */}
-        <div className="flex items-center gap-3 bg-gray-900/40 border border-gray-800 p-4 rounded-2xl overflow-x-auto custom-scrollbar shadow-sm">
-           <span className="text-sm font-medium text-slate-400 shrink-0 ml-2 mr-1">Today I'm feeling:</span>
+        <div className="flex items-center gap-3 bg-white/40 border border-slate-200 p-8 rounded-2xl overflow-x-auto custom-scrollbar shadow-sm">
+           <span className="text-base font-medium text-slate-600 shrink-0 ml-2 mr-1">Today I'm feeling:</span>
            <div className="flex items-center gap-2">
              {MOODS.map(mood => (
                 <button
                    key={mood.label}
                    onClick={() => setSelectedMood(mood.label === selectedMood ? null : mood.label)}
-                   className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm transition-all border ${
+                   className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-base transition-all border ${
                      selectedMood === mood.label 
-                       ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-300 shadow-[0_0_10px_rgba(6,182,212,0.2)]' 
-                       : 'bg-slate-800/50 border-slate-700/50 text-slate-400 hover:bg-slate-700 hover:border-slate-600'
+                       ? 'bg-blue-600/20 border-blue-600/50 text-cyan-300 shadow-[0_0_10px_rgba(6,182,212,0.2)]' 
+                       : 'bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200 hover:border-slate-300'
                    }`}
                 >
                    <span className="text-base">{mood.emoji}</span>
@@ -251,20 +237,20 @@ export function DailyChatView({ latestReport, onAnalyzeChat, isAnalyzing }: Dail
         </div>
 
         {/* Chat Interface */}
-        <div className="bg-gray-900/40 border border-gray-800 backdrop-blur-md rounded-3xl p-6 shadow-xl flex flex-col h-[500px]">
+        <div className="bg-white/40 border border-slate-200 backdrop-blur-md rounded-3xl p-8 shadow-xl flex flex-col h-[500px]">
            
-            <div className="flex-1 overflow-y-auto space-y-6 pr-2 custom-scrollbar pb-6">
+            <div className="flex-1 overflow-y-auto space-y-8 pr-2 custom-scrollbar pb-6">
               {chatHistory.map((msg, i) => (
                 <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[85%] flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                      <div className={`rounded-2xl p-4 shadow-sm ${
+                      <div className={`rounded-2xl p-8 shadow-sm ${
                         msg.role === 'user' 
-                          ? 'bg-cyan-600 text-white rounded-br-none' 
-                          : 'bg-slate-800 text-slate-200 rounded-bl-none border border-slate-700'
+                          ? 'bg-blue-600 text-white rounded-br-none' 
+                          : 'bg-slate-100 text-slate-900 rounded-bl-none border border-slate-200'
                       }`}>
                         <p className="whitespace-pre-wrap text-[15px] leading-relaxed">{msg.text}</p>
                       </div>
-                      <span className="text-[11px] text-slate-500 mt-1.5 flex items-center gap-1 font-medium bg-slate-900/50 px-2 py-0.5 rounded-full border border-slate-800/50">
+                      <span className="text-[11px] text-slate-500 mt-1.5 flex items-center gap-1 font-medium bg-white/80 px-2 py-0.5 rounded-full border border-slate-200/50">
                           <Clock className="w-3 h-3" />
                           {msg.timestamp || 'Now'}
                       </span>
@@ -274,7 +260,7 @@ export function DailyChatView({ latestReport, onAnalyzeChat, isAnalyzing }: Dail
               
               {isChatLoading && (
                 <div className="flex justify-start">
-                  <div className="bg-slate-800 rounded-2xl p-4 rounded-bl-none border border-slate-700">
+                  <div className="bg-slate-100 rounded-2xl p-8 rounded-bl-none border border-slate-200">
                     <div className="flex space-x-1.5 items-center h-4">
                       <div className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '0ms' }} />
                       <div className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -292,13 +278,13 @@ export function DailyChatView({ latestReport, onAnalyzeChat, isAnalyzing }: Dail
                 onChange={(e) => setChatInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Message your journal... (Shift+Enter for new line)"
-                className="w-full bg-slate-950/80 border border-slate-700 rounded-2xl pl-5 pr-14 py-4 text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 resize-none h-[64px] shadow-xl text-sm"
+                className="w-full bg-white border border-slate-200 rounded-2xl pl-5 pr-14 py-6 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600/50 resize-none h-[64px] shadow-xl text-base"
                 rows={1}
               />
               <button
                 onClick={sendChatMessage}
                 disabled={!chatInput.trim() || isChatLoading}
-                className="absolute right-2 bottom-2 p-2.5 bg-cyan-500 hover:bg-cyan-400 disabled:bg-slate-700 disabled:text-slate-500 rounded-xl transition-colors shadow-lg"
+                className="absolute right-2 bottom-2 p-2.5 bg-blue-600 hover:bg-blue-600 disabled:bg-slate-700 disabled:text-slate-500 rounded-xl transition-colors shadow-lg"
               >
                 <Send className="w-4 h-4 text-slate-950" />
               </button>
