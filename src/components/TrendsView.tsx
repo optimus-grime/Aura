@@ -1,31 +1,26 @@
 import { auth } from '../firebase';
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { SavedReport } from '../types';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts';
-import { Trash2, Filter, Info, CloudLightning, FileText } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts';
+import { Trash2, Info, CloudLightning, FileText } from 'lucide-react';
 import { toCanvas } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 import { AnalysisReport } from './AnalysisReport';
-import Highcharts from 'highcharts';
-import HighchartsReact from 'highcharts-react-official';
-import highcharts3d from 'highcharts/highcharts-3d';
-
-
-const hc3d: any = highcharts3d;
-if (typeof hc3d === 'function') {
-    hc3d(Highcharts);
-} else if (hc3d && typeof hc3d.default === 'function') {
-    hc3d.default(Highcharts);
-}
-  
-
 
 interface TrendsViewProps {
   reports: SavedReport[];
   onViewReport: (report: SavedReport) => void;
   onDeleteReport: (id: string) => void;
 }
+
+const TRAITS = [
+  { id: 'openness', name: 'Openness', color: '#06b6d4', description: 'Inventive/curious vs. consistent/cautious' },
+  { id: 'conscientiousness', name: 'Conscientiousness', color: '#8b5cf6', description: 'Efficient/organized vs. extravagant/careless' },
+  { id: 'extraversion', name: 'Extraversion', color: '#f59e0b', description: 'Outgoing/energetic vs. solitary/reserved' },
+  { id: 'agreeableness', name: 'Agreeableness', color: '#10b981', description: 'Friendly/compassionate vs. critical/rational' },
+  { id: 'neuroticism', name: 'Neuroticism', color: '#ef4444', description: 'Sensitive/nervous vs. resilient/confident' }
+];
 
 const TRAIT_DESCRIPTIONS: Record<string, string> = {
   openness: 'Inventive and curious vs. consistent and cautious',
@@ -35,22 +30,22 @@ const TRAIT_DESCRIPTIONS: Record<string, string> = {
   neuroticism: 'Sensitive and nervous vs. resilient and confident'
 };
 
-const CustomChartTooltip = ({ active, payload, label }: any) => {
+const CustomChartTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
-      <div className="bg-white/95 backdrop-blur-md border border-slate-200/80 p-8 rounded-xl shadow-2xl w-72">
+      <div className="bg-white/95 backdrop-blur-md border border-slate-200/80 p-6 rounded-xl shadow-2xl w-72">
         <p className="text-slate-800 font-medium mb-2 border-b border-slate-200 pb-2">{data.date} at {data.time}</p>
         <div className="py-2 space-y-1.5">
           {payload.map((entry: any, index: number) => (
              <div key={`item-${index}`} className="flex justify-between items-center text-base">
                 <span style={{ color: entry.color }} className="font-medium drop-shadow-sm">{entry.name}</span>
-                <span className="text-slate-900 font-mono">{entry.value}</span>
+                <span className="text-slate-900 font-mono font-bold">{entry.value}</span>
              </div>
           ))}
         </div>
         {data.summary && (
-          <p className="text-sm text-slate-600 border-t border-slate-200 pt-3 mt-1 leading-relaxed">
+          <p className="text-sm text-slate-600 border-t border-slate-200 pt-3 mt-1 leading-relaxed line-clamp-3">
              {data.summary}
           </p>
         )}
@@ -60,7 +55,26 @@ const CustomChartTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-
+const SmallMultipleTooltip = ({ active, payload, traitName, traitColor }: any) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    return (
+      <div className="bg-white/95 backdrop-blur-md border border-slate-200/80 p-4 rounded-xl shadow-xl w-60 z-50">
+        <p className="text-slate-800 font-medium mb-1.5 border-b border-slate-100 pb-1.5 text-[11px]">{data.date} at {data.time}</p>
+        <div className="flex justify-between items-center text-sm mb-1.5">
+          <span style={{ color: traitColor }} className="font-semibold">{traitName}</span>
+          <span className="text-slate-900 font-mono font-bold">{payload[0].value}</span>
+        </div>
+        {data.summary && (
+          <p className="text-xs text-slate-500 leading-normal line-clamp-2">
+            {data.summary}
+          </p>
+        )}
+      </div>
+    );
+  }
+  return null;
+};
 
 export function TrendsView({ reports, onViewReport, onDeleteReport }: TrendsViewProps) {
   const [selectedTraits, setSelectedTraits] = useState<string[]>(['openness', 'conscientiousness', 'extraversion', 'agreeableness', 'neuroticism']);
@@ -121,8 +135,10 @@ export function TrendsView({ reports, onViewReport, onDeleteReport }: TrendsView
   
   const chartData = chronologicalReports.map(rp => {
     const dateObj = new Date(rp.date);
+    const shortDate = `${String(dateObj.getMonth() + 1).padStart(2, '0')}/${String(dateObj.getDate()).padStart(2, '0')}`;
     return {
       date: dateObj.toLocaleDateString(),
+      shortDate,
       time: dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       openness: rp.report.bigFive?.openness || 0,
       conscientiousness: rp.report.bigFive?.conscientiousness || 0,
@@ -146,7 +162,9 @@ export function TrendsView({ reports, onViewReport, onDeleteReport }: TrendsView
       const response = await fetch('/api/compare-reports', {
         method: 'POST',
         headers: {
-        'Authorization': `Bearer ${(await auth.currentUser?.getIdToken()) || ''}`, 'Content-Type': 'application/json' },
+          'Authorization': `Bearer ${(await auth.currentUser?.getIdToken()) || ''}`,
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({ report1: rep1.report, report2: rep2.report }),
       });
       const data = await response.json();
@@ -170,109 +188,6 @@ export function TrendsView({ reports, onViewReport, onDeleteReport }: TrendsView
     { subject: 'Agreeableness', A: rep1.report.bigFive?.agreeableness || 0, B: rep2.report.bigFive?.agreeableness || 0, fullMark: 100 },
     { subject: 'Neuroticism', A: rep1.report.bigFive?.neuroticism || 0, B: rep2.report.bigFive?.neuroticism || 0, fullMark: 100 },
   ] : [];
-
-
-  const highchartsOptions = useMemo(() => {
-    const traitColors: Record<string, string> = {
-      openness: '#06b6d4',
-      conscientiousness: '#8b5cf6',
-      extraversion: '#f59e0b',
-      agreeableness: '#10b981',
-      neuroticism: '#ef4444'
-    };
-
-    return {
-        chart: {
-            type: 'area',
-            options3d: {
-                enabled: true,
-                alpha: 15,
-                beta: 30,
-                depth: 400,
-                viewDistance: 50
-            },
-            backgroundColor: '#ffffff'
-        },
-        title: { text: null },
-        xAxis: {
-            categories: chartData.map(d => d.date + ' ' + d.time),
-            gridLineColor: '#f1f5f9',
-            labels: { 
-               style: { color: '#64748b', fontWeight: '500' },
-               step: 4
-            }
-        },
-        yAxis: {
-            min: 0,
-            max: 100,
-            title: { text: null },
-            gridLineColor: '#f1f5f9',
-            labels: { 
-               style: { color: '#64748b', fontWeight: '500' },
-               step: 4
-            }
-        },
-        plotOptions: {
-            area: {
-                depth: 120, // deeper ribbons
-                marker: { enabled: false },
-                lineWidth: 2,
-                states: {
-                    inactive: {
-                        opacity: 0.15
-                    },
-                    hover: {
-                        brightness: 0.1
-                    }
-                }
-            }
-        },
-        legend: {
-           itemStyle: { color: '#334155' }
-        },
-        tooltip: {
-            shared: true
-        },
-        series: [
-            {
-                name: 'Openness',
-                data: chartData.map(d => d.openness),
-                color: traitColors.openness,
-                visible: selectedTraits.includes('openness'),
-                fillOpacity: 0.9, edgeWidth: 1, edgeColor: 'rgba(0,0,0,0.1)'
-            },
-            {
-                name: 'Conscientiousness',
-                data: chartData.map(d => d.conscientiousness),
-                color: traitColors.conscientiousness,
-                visible: selectedTraits.includes('conscientiousness'),
-                fillOpacity: 0.9, edgeWidth: 1, edgeColor: 'rgba(0,0,0,0.1)'
-            },
-            {
-                name: 'Extraversion',
-                data: chartData.map(d => d.extraversion),
-                color: traitColors.extraversion,
-                visible: selectedTraits.includes('extraversion'),
-                fillOpacity: 0.9, edgeWidth: 1, edgeColor: 'rgba(0,0,0,0.1)'
-            },
-            {
-                name: 'Agreeableness',
-                data: chartData.map(d => d.agreeableness),
-                color: traitColors.agreeableness,
-                visible: selectedTraits.includes('agreeableness'),
-                fillOpacity: 0.9, edgeWidth: 1, edgeColor: 'rgba(0,0,0,0.1)'
-            },
-            {
-                name: 'Neuroticism',
-                data: chartData.map(d => d.neuroticism),
-                color: traitColors.neuroticism,
-                visible: selectedTraits.includes('neuroticism'),
-                fillOpacity: 0.9, edgeWidth: 1, edgeColor: 'rgba(0,0,0,0.1)'
-            }
-        ],
-        credits: { enabled: false }
-    };
-  }, [chartData, selectedTraits]);
 
   return (
     <motion.div 
@@ -313,21 +228,15 @@ export function TrendsView({ reports, onViewReport, onDeleteReport }: TrendsView
       {viewMode === 'timeline' ? (
       <div className="bg-white backdrop-blur-md rounded-2xl border border-slate-200 p-8 shadow-xl w-full">
         <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
-          <h3 className="text-lg font-medium text-slate-900">Big Five Trends over Time</h3>
+          <h3 className="text-lg font-semibold text-slate-900">Big Five Trends over Time</h3>
           <div className="flex flex-wrap gap-2 justify-end">
-            {[
-              { id: 'openness', label: 'Openness', color: 'border-[#06b6d4] text-[#06b6d4]' },
-              { id: 'conscientiousness', label: 'Conscientiousness', color: 'border-[#8b5cf6] text-[#8b5cf6]' },
-              { id: 'extraversion', label: 'Extraversion', color: 'border-[#f59e0b] text-[#f59e0b]' },
-              { id: 'agreeableness', label: 'Agreeableness', color: 'border-[#10b981] text-[#10b981]' },
-              { id: 'neuroticism', label: 'Neuroticism', color: 'border-[#ef4444] text-[#ef4444]' }
-            ].map(t => (
+            {TRAITS.map(t => (
               <div key={t.id} className="relative flex items-center bg-white rounded-full border border-slate-200 pr-1 shadow-sm">
                 <button
                   onClick={(e) => { e.stopPropagation(); toggleTrait(t.id); }}
-                  className={`px-3 py-1.5 rounded-full rounded-r-none text-sm font-medium transition-all ${selectedTraits.includes(t.id) ? 'text-white border-r shadow-md' : 'text-slate-600 hover:text-slate-800 bg-white border-r border-slate-200'}`} style={selectedTraits.includes(t.id) ? { backgroundColor: t.color.match(/#([a-fA-F0-9]{6})/)[0], borderColor: t.color.match(/#([a-fA-F0-9]{6})/)[0] } : {}}
+                  className={`px-3 py-1.5 rounded-full rounded-r-none text-xs font-semibold transition-all ${selectedTraits.includes(t.id) ? 'text-white border-r shadow-md' : 'text-slate-600 hover:text-slate-800 bg-white border-r border-slate-200'}`} style={selectedTraits.includes(t.id) ? { backgroundColor: t.color, borderColor: t.color } : {}}
                 >
-                  {t.label}
+                  {t.name}
                 </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); setActiveTraitInfo(activeTraitInfo === t.id ? null : t.id); }}
@@ -342,7 +251,7 @@ export function TrendsView({ reports, onViewReport, onDeleteReport }: TrendsView
                       initial={{ opacity: 0, y: 5 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 5 }}
-                      className="absolute bottom-full right-0 mb-2 w-56 bg-slate-100 border border-slate-200/80 text-slate-800 text-sm rounded-xl p-3 shadow-2xl z-20 text-center leading-relaxed backdrop-blur-sm pointer-events-none"
+                      className="absolute bottom-full right-0 mb-2 w-56 bg-slate-100 border border-slate-200/80 text-slate-800 text-xs rounded-xl p-3 shadow-2xl z-20 text-center leading-relaxed backdrop-blur-sm pointer-events-none"
                     >
                       {TRAIT_DESCRIPTIONS[t.id]}
                       <div className="absolute top-full right-3 -mt-[1px] border-4 border-transparent border-t-slate-700/80" />
@@ -353,13 +262,74 @@ export function TrendsView({ reports, onViewReport, onDeleteReport }: TrendsView
             ))}
           </div>
         </div>
-        <div className="h-[400px] w-full relative bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden p-2">
-          <HighchartsReact highcharts={Highcharts} options={highchartsOptions} containerProps={{ style: { height: '100%', width: '100%' } }} />
+
+        {/* Small Multiples Sparkline Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4 mb-10">
+          {TRAITS.map(trait => {
+            const isVisible = selectedTraits.includes(trait.id);
+            if (!isVisible) return null;
+            
+            const lastVal = chartData.length > 0 ? chartData[chartData.length - 1][trait.id as keyof typeof chartData[0]] : null;
+            
+            return (
+              <div key={trait.id} className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between h-48">
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-bold text-slate-800">{trait.name}</span>
+                    <span style={{ color: trait.color }} className="text-sm font-mono font-bold">
+                      {lastVal !== null ? `${lastVal}` : '-'}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 line-clamp-1 leading-tight">{trait.description}</p>
+                </div>
+                
+                <div className="h-24 w-full mt-3">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart 
+                      data={chartData} 
+                      margin={{ top: 5, right: 10, left: -32, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                      <XAxis 
+                        dataKey="shortDate" 
+                        stroke="#94a3b8" 
+                        fontSize={10} 
+                        tickLine={false} 
+                        axisLine={false}
+                        interval="preserveStartEnd"
+                      />
+                      <YAxis 
+                        stroke="#94a3b8" 
+                        fontSize={10} 
+                        tickLine={false} 
+                        axisLine={false} 
+                        domain={[0, 100]}
+                        ticks={[0, 50, 100]}
+                      />
+                      <Tooltip 
+                        content={<SmallMultipleTooltip traitName={trait.name} traitColor={trait.color} />}
+                        cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }}
+                        wrapperStyle={{ zIndex: 100 }}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey={trait.id} 
+                        stroke={trait.color} 
+                        strokeWidth={2} 
+                        dot={false}
+                        activeDot={{ r: 4, strokeWidth: 0 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         <div className="mt-12 mb-6">
           <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
-            <h3 className="text-lg font-medium text-slate-900">Sentiment Over Time (Mood Fluctuations)</h3>
+            <h3 className="text-lg font-semibold text-slate-900">Sentiment Over Time (Mood Fluctuations)</h3>
           </div>
           <div className="h-[300px] w-full relative bg-white border border-slate-200 rounded-xl shadow-sm p-4 mt-2">
             <ResponsiveContainer width="100%" height="100%">
@@ -368,8 +338,8 @@ export function TrendsView({ reports, onViewReport, onDeleteReport }: TrendsView
                 margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                <XAxis dataKey="date" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} domain={[0, 100]} />
+                <XAxis dataKey="shortDate" stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} domain={[0, 100]} />
                 <Tooltip 
                   content={<CustomChartTooltip />}
                   cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }}
@@ -453,9 +423,9 @@ export function TrendsView({ reports, onViewReport, onDeleteReport }: TrendsView
           <div className="text-base text-slate-800 leading-relaxed">
             <p className="font-medium text-slate-900 mb-1">Understanding Your Trait Scores</p>
             <p>
-              The chart displays your personality trait expression on a 0-100 scale over time. 
+              The grid displays your personality trait expression on a 0-100 scale over time in a small-multiples format. 
               Higher values indicate a stronger expression of the trait. For example, a high score in Extraversion means you're leaning more towards outgoing behavior, while a lower score leans towards introversion.
-              Hover over the trait toggles above to see brief explanations, or hover over points on the chart to read summaries for specific dates.
+              Hover over points on the sparklines to read specific notes and summaries for individual dates.
             </p>
           </div>
         </div>
@@ -497,63 +467,46 @@ export function TrendsView({ reports, onViewReport, onDeleteReport }: TrendsView
 
                {rep1 && rep2 && (
                    <div className="flex flex-col items-center justify-center p-8 bg-white/30 rounded-xl border border-slate-200/50">
-                      <div 
-                         className="h-[550px] w-full max-w-2xl relative flex flex-col items-center justify-center my-6"
-                         style={{ perspective: '1400px' }}
-                      >
-                        <div 
-                           className="w-full h-[500px] relative"
-                           style={{ 
-                             transform: 'rotateX(55deg) rotateZ(-45deg)', 
-                             transformStyle: 'preserve-3d',
-                             transition: 'transform 0.5s ease-in-out'
-                           }}
-                        >
+                      <div className="h-[500px] w-full max-w-2xl relative flex flex-col items-center justify-center my-6">
+                        <div className="w-full h-full relative">
                            <ResponsiveContainer width="100%" height="100%">
                               <RadarChart cx="50%" cy="50%" outerRadius="75%" data={comparisonData}>
                                  <defs>
                                    <filter id="glowA" x="-20%" y="-20%" width="140%" height="140%">
-                                     <feDropShadow dx="-6" dy="16" stdDeviation="6" floodColor="#06b6d4" floodOpacity="0.4" />
+                                     <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#06b6d4" floodOpacity="0.3" />
                                    </filter>
                                    <filter id="glowB" x="-20%" y="-20%" width="140%" height="140%">
-                                     <feDropShadow dx="6" dy="16" stdDeviation="6" floodColor="#8b5cf6" floodOpacity="0.4" />
+                                     <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#d946ef" floodOpacity="0.3" />
                                    </filter>
                                  </defs>
                                  <PolarGrid stroke="#cbd5e1" strokeWidth={2} strokeDasharray="4 4" />
-                                 <PolarAngleAxis dataKey="subject" tick={{ fill: '#334155', fontSize: 16, fontWeight: '700' }} />
+                                 <PolarAngleAxis dataKey="subject" tick={{ fill: '#334155', fontSize: 14, fontWeight: '700' }} />
                                  <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
                                  
                                  <Tooltip 
-                                    wrapperStyle={{ transform: 'rotateZ(45deg) rotateX(-55deg) scale(1.1)', transformOrigin: 'center center', pointerEvents: 'none', zIndex: 1000 }}
                                     contentStyle={{ backgroundColor: 'rgba(255,255,255,0.95)', borderColor: '#e2e8f0', borderRadius: '12px', boxShadow: '0 15px 35px rgba(0,0,0,0.2)', padding: '12px 20px', fontWeight: 'bold' }} 
                                     itemStyle={{ color: '#0f172a', fontWeight: 'bold', fontSize: '15px' }}
                                     labelStyle={{ color: '#64748b', fontSize: '13px', textTransform: 'uppercase', tracking: 'widest' }}
                                  />
                                  
-                                 {/* Baseline Extrusion Layers (Simulated 3D) */}
-                                 <Radar dataKey="A" stroke="none" fill="#06b6d4" fillOpacity={0.15} style={{ transform: 'translate(-4px, 12px)', filter: 'url(#glowA)' }} />
-                                 <Radar dataKey="A" stroke="none" fill="#06b6d4" fillOpacity={0.25} style={{ transform: 'translate(-2px, 8px)' }} />
-                                 <Radar dataKey="A" stroke="none" fill="#06b6d4" fillOpacity={0.4} style={{ transform: 'translate(-1px, 4px)' }} />
-                                 <Radar name="Baseline" dataKey="A" stroke="#0891b2" strokeWidth={3} fill="#22d3ee" fillOpacity={0.7} />
+                                 {/* Baseline - Volumetric Glass Opacities and Flat Styling */}
+                                 <Radar name="Baseline" dataKey="A" stroke="#06b6d4" strokeWidth={2.5} fill="#06b6d4" fillOpacity={0.25} style={{ filter: 'url(#glowA)' }} />
 
-                                 {/* Comparison Extrusion Layers (Simulated 3D) */}
-                                 <Radar dataKey="B" stroke="none" fill="#8b5cf6" fillOpacity={0.15} style={{ transform: 'translate(4px, 12px)', filter: 'url(#glowB)' }} />
-                                 <Radar dataKey="B" stroke="none" fill="#8b5cf6" fillOpacity={0.25} style={{ transform: 'translate(2px, 8px)' }} />
-                                 <Radar dataKey="B" stroke="none" fill="#8b5cf6" fillOpacity={0.4} style={{ transform: 'translate(1px, 4px)' }} />
-                                 <Radar name="Comparison" dataKey="B" stroke="#7c3aed" strokeWidth={3} fill="#a78bfa" fillOpacity={0.7} />
+                                 {/* Comparison - Volumetric Glass Opacities and Flat Styling */}
+                                 <Radar name="Comparison" dataKey="B" stroke="#d946ef" strokeWidth={2.5} fill="#d946ef" fillOpacity={0.25} style={{ filter: 'url(#glowB)' }} />
                                  
                               </RadarChart>
                            </ResponsiveContainer>
                         </div>
                         
-                        {/* Custom Legend outside of 3D transformed container */}
+                        {/* Custom Legend */}
                         <div className="flex justify-center items-center space-x-8 mt-6">
                            <div className="flex items-center space-x-3">
-                              <div className="w-4 h-4 rounded-md bg-[#22d3ee] border-2 border-[#0891b2] shadow-sm"></div>
+                              <div className="w-4 h-4 rounded-md bg-[#06b6d4] border-2 border-[#06b6d4] shadow-sm"></div>
                               <span className="text-base font-bold text-slate-700">Baseline</span>
                            </div>
                            <div className="flex items-center space-x-3">
-                              <div className="w-4 h-4 rounded-md bg-[#a78bfa] border-2 border-[#7c3aed] shadow-sm"></div>
+                              <div className="w-4 h-4 rounded-md bg-[#d946ef] border-2 border-[#d946ef] shadow-sm"></div>
                               <span className="text-base font-bold text-slate-700">Comparison</span>
                            </div>
                         </div>
@@ -561,36 +514,24 @@ export function TrendsView({ reports, onViewReport, onDeleteReport }: TrendsView
                       
                       <div className="w-full mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="p-8 bg-white shadow-sm rounded-xl border border-slate-200 flex flex-col">
-                          <h4 className="font-medium text-blue-600 mb-2">Baseline Details</h4>
+                          <h4 className="font-semibold text-blue-600 mb-2 text-base">Baseline Details</h4>
                           <p className="text-base text-slate-800"><strong>MBTI:</strong> {rep1.report.mbti}</p>
                           {rep1.report.enneagram && <p className="text-base text-slate-800"><strong>Enneagram:</strong> {rep1.report.enneagram}</p>}
                           <p className="text-base text-slate-800"><strong>Readiness:</strong> {rep1.report.readiness?.score || 'N/A'}/100</p>
                           {rep1.report.summary && (
                             <div className="mt-2 text-sm text-slate-600">
-                              <p className={`${expandedBaseline ? '' : 'line-clamp-3'}`}>{rep1.report.summary}</p>
-                              <button 
-                                onClick={() => setExpandedBaseline(!expandedBaseline)}
-                                className="text-blue-600 hover:text-blue-600 mt-1 font-medium select-none"
-                              >
-                                {expandedBaseline ? 'Show less' : 'Read more'}
-                              </button>
+                              <p className="text-slate-800 leading-relaxed text-base font-normal">{rep1.report.summary}</p>
                             </div>
                           )}
                         </div>
                         <div className="p-8 bg-white shadow-sm rounded-xl border border-slate-200 flex flex-col">
-                          <h4 className="font-medium text-purple-400 mb-2">Comparison Details</h4>
+                          <h4 className="font-semibold text-purple-600 mb-2 text-base">Comparison Details</h4>
                           <p className="text-base text-slate-800"><strong>MBTI:</strong> {rep2.report.mbti}</p>
                           {rep2.report.enneagram && <p className="text-base text-slate-800"><strong>Enneagram:</strong> {rep2.report.enneagram}</p>}
                           <p className="text-base text-slate-800"><strong>Readiness:</strong> {rep2.report.readiness?.score || 'N/A'}/100</p>
                           {rep2.report.summary && (
                             <div className="mt-2 text-sm text-slate-600">
-                              <p className={`${expandedComparison ? '' : 'line-clamp-3'}`}>{rep2.report.summary}</p>
-                              <button 
-                                onClick={() => setExpandedComparison(!expandedComparison)}
-                                className="text-purple-500 hover:text-purple-400 mt-1 font-medium select-none"
-                              >
-                                {expandedComparison ? 'Show less' : 'Read more'}
-                              </button>
+                              <p className="text-slate-800 leading-relaxed text-base font-normal">{rep2.report.summary}</p>
                             </div>
                           )}
                         </div>
@@ -615,7 +556,7 @@ export function TrendsView({ reports, onViewReport, onDeleteReport }: TrendsView
                         )}
                         {comparisonSummary && (
                           <div className="w-full bg-white shadow-sm rounded-xl p-6 border border-slate-200 mt-4 text-left">
-                            <h4 className="font-medium text-slate-900 mb-2 flex items-center gap-2">
+                            <h4 className="font-semibold text-slate-900 mb-2 flex items-center gap-2">
                               <CloudLightning className="w-4 h-4 text-blue-600" />
                               Comparison Insights
                             </h4>
@@ -626,8 +567,8 @@ export function TrendsView({ reports, onViewReport, onDeleteReport }: TrendsView
                               <div className="space-y-3">
                                 {comparisonSummary.keyDifferences.map((diff, i) => (
                                   <div key={i} className="bg-slate-50 p-4 rounded-lg border border-slate-200">
-                                    <div className="font-medium text-blue-600 text-base mb-1">{diff.trait}</div>
-                                    <div className="text-slate-600 text-base leading-relaxed">{diff.meaning}</div>
+                                    <div className="font-semibold text-blue-600 text-base mb-1">{diff.trait}</div>
+                                    <div className="text-slate-700 text-base leading-relaxed">{diff.meaning}</div>
                                   </div>
                                 ))}
                               </div>

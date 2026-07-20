@@ -7,10 +7,9 @@ import { RobotFace } from './components/RobotFace';
 import { AnalysisReport } from './components/AnalysisReport';
 import { TrendsView } from './components/TrendsView';
 import { JournalView } from './components/JournalView';
-import { StrategiesView } from './components/StrategiesView';
 import { DailyChatView } from './components/DailyChatView';
 import { CSVImporter } from './components/CSVImporter';
-import { Mic, MicOff, AlertCircle, MessageSquare, TrendingUp, BookOpen, LogOut, Compass, MessageCircle, Menu, X, Settings, Bell, BellOff, Layers, UploadCloud, Archive } from 'lucide-react';
+import { Mic, MicOff, AlertCircle, MessageSquare, TrendingUp, BookOpen, LogOut, MessageCircle, Menu, X, Settings, Bell, BellOff, Layers, UploadCloud, Archive } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useState, useEffect, useRef } from 'react';
 import { SavedReport, ReportData } from './types';
@@ -26,7 +25,7 @@ export default function App() {
   const { isConnected, isError, isSpeaking, userIsSpeaking, report, connect, disconnect } = useLiveAudio();
   const [showReport, setShowReport] = useState(false);
   const [appReport, setAppReport] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'voice' | 'text' | 'daily' | 'trends' | 'history' | 'journal' | 'strategies' | 'layered' | 'import' | 'archive'>('voice');
+  const [activeTab, setActiveTab] = useState<'voice' | 'text' | 'daily' | 'trends' | 'history' | 'journal' | 'layered' | 'archive'>('voice');
 
   const [textInput, setTextInput] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -200,8 +199,6 @@ export default function App() {
                    { id: 'layered', icon: Layers, label: 'Layered Insights' },
                    { id: 'archive', icon: Archive, label: 'Aura Archive' },
                    { id: 'journal', icon: BookOpen, label: 'Journaling' },
-                   { id: 'strategies', icon: Compass, label: 'Action Strategies' },
-                   { id: 'import', icon: UploadCloud, label: 'Import CSV Data' }
                  ].map(item => (
                    <button 
                      key={item.id}
@@ -247,7 +244,7 @@ export default function App() {
                initial={{ opacity: 0, scale: 0.95 }}
                animate={{ opacity: 1, scale: 1 }}
                exit={{ opacity: 0, scale: 0.95 }}
-               className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-8 relative z-10 shadow-2xl"
+               className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-8 relative z-10 shadow-2xl max-h-[90vh] overflow-y-auto"
              >
                 <div className="flex items-center justify-between mb-8">
                   <h3 className="text-xl font-semibold text-slate-900 flex items-center gap-2">
@@ -284,6 +281,25 @@ export default function App() {
                        You have blocked notifications in your browser. Please enable them in your browser settings to use this feature.
                     </p>
                   )}
+
+                  {/* CSV Import */}
+                  <div className="border-t border-slate-200 pt-6">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="p-2 rounded-lg bg-blue-600/10 text-blue-600">
+                        <UploadCloud className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-slate-900 font-medium text-base">Import External Data</p>
+                        <p className="text-slate-600 text-sm mt-0.5 font-sans">
+                          Load previous journal entries or mood logs from a CSV.
+                        </p>
+                      </div>
+                    </div>
+                    <CSVImporter compact={true} onImportComplete={() => {
+                      setShowSettings(false);
+                      setActiveTab('trends');
+                    }} />
+                  </div>
                 </div>
              </motion.div>
            </div>
@@ -497,9 +513,7 @@ export default function App() {
           <JournalView latestReport={savedReports.length > 0 ? savedReports[0].report : null} />
         )}
 
-        {activeTab === 'strategies' && (
-          <StrategiesView latestReport={savedReports.length > 0 ? savedReports[0].report : null} />
-        )}
+
 
         {activeTab === 'daily' && (
           <DailyChatView 
@@ -533,9 +547,7 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'import' && (
-          <CSVImporter onImportComplete={() => setActiveTab('trends')} />
-        )}
+
           </>
         )}
       </div>

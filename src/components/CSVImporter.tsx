@@ -5,7 +5,7 @@ import { UploadCloud, FileText, Loader2, AlertCircle, CheckCircle, Sparkles } fr
 import { motion } from 'motion/react';
 import { useFirebaseReports } from '../hooks/useFirebaseReports';
 
-export function CSVImporter({ onImportComplete }: { onImportComplete: () => void }) {
+export function CSVImporter({ onImportComplete, compact = false }: { onImportComplete: () => void; compact?: boolean }) {
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -74,19 +74,23 @@ export function CSVImporter({ onImportComplete }: { onImportComplete: () => void
   };
 
   return (
-    <div className="w-full flex flex-col items-center justify-center p-8 mt-12 bg-white/80 rounded-3xl border border-slate-200/80 shadow-2xl">
-      <div className="w-16 h-16 bg-blue-600/10 rounded-full flex items-center justify-center mb-6">
-        <UploadCloud className="w-8 h-8 text-blue-600" />
-      </div>
-      <h2 className="text-2xl font-bold text-slate-900 mb-2">Import External Data</h2>
-      <p className="text-slate-600 text-center max-w-md mb-8">
-        Upload a .csv file from another application containing your previous journal entries, mood logs, or habits. Aura will synthesize the entire dataset into a comprehensive historical profile.
-      </p>
+    <div className={compact ? "w-full flex flex-col items-center justify-center p-4 bg-slate-50 rounded-2xl border border-slate-200" : "w-full flex flex-col items-center justify-center p-8 mt-12 bg-white/80 rounded-3xl border border-slate-200/80 shadow-2xl"}>
+      {!compact && (
+        <>
+          <div className="w-16 h-16 bg-blue-600/10 rounded-full flex items-center justify-center mb-6">
+            <UploadCloud className="w-8 h-8 text-blue-600" />
+          </div>
+          <h2 className="text-2xl font-bold text-slate-900 mb-2">Import External Data</h2>
+          <p className="text-slate-600 text-center max-w-md mb-8">
+            Upload a .csv file from another application containing your previous journal entries, mood logs, or habits. Aura will synthesize the entire dataset into a comprehensive historical profile.
+          </p>
+        </>
+      )}
 
       {error && (
-        <div className="w-full max-w-sm mb-6 flex items-center space-x-3 text-rose-600 bg-rose-50 px-6 py-3 rounded-xl border border-rose-200">
+        <div className="w-full max-w-sm mb-4 flex items-center space-x-3 text-rose-600 bg-rose-50 px-4 py-2 rounded-xl border border-rose-200">
           <AlertCircle className="w-5 h-5 shrink-0" />
-          <span className="text-base">{error}</span>
+          <span className="text-sm">{error}</span>
         </div>
       )}
 
@@ -94,14 +98,14 @@ export function CSVImporter({ onImportComplete }: { onImportComplete: () => void
         <motion.div 
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="w-full max-w-sm mb-6 flex items-center space-x-3 text-emerald-600 bg-emerald-500/10 px-6 py-3 rounded-xl border border-emerald-500/20"
+          className="w-full max-w-sm mb-4 flex items-center space-x-3 text-emerald-600 bg-emerald-500/10 px-4 py-2 rounded-xl border border-emerald-500/20"
         >
           <CheckCircle className="w-5 h-5 shrink-0" />
-          <span className="text-base">Import successful! Synthesized report created. Redirecting...</span>
+          <span className="text-sm">Import successful! Synthesized report created. Redirecting...</span>
         </motion.div>
       )}
 
-      <div className="w-full max-w-sm space-y-8">
+      <div className="w-full max-w-sm space-y-4">
         <div className="relative group">
           <input 
             type="file" 
@@ -110,22 +114,22 @@ export function CSVImporter({ onImportComplete }: { onImportComplete: () => void
             disabled={isUploading}
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 disabled:cursor-not-allowed" 
           />
-          <div className={`p-8 rounded-xl border-2 border-dashed flex items-center justify-center transition-colors ${file ? 'border-blue-600/50 bg-blue-600/5' : 'border-slate-200 hover:border-slate-500 bg-slate-100'}`}>
+          <div className={`p-4 rounded-xl border-2 border-dashed flex items-center justify-center transition-colors ${file ? 'border-blue-600/50 bg-blue-600/5' : 'border-slate-200 hover:border-slate-500 bg-slate-100'}`}>
             {file ? (
               <div className="flex items-center space-x-3">
                 <FileText className="w-6 h-6 text-blue-600" />
-                <span className="text-base text-slate-900 truncate font-medium">{file.name}</span>
+                <span className="text-sm text-slate-900 truncate font-medium">{file.name}</span>
               </div>
             ) : (
-              <div className="flex flex-col items-center space-y-2 text-slate-600">
-                <UploadCloud className="w-6 h-6" />
-                <span className="text-base font-medium">Click or drag CSV here</span>
+              <div className="flex flex-col items-center space-y-1 text-slate-600">
+                <UploadCloud className="w-5 h-5" />
+                <span className="text-sm font-medium">Click or drag CSV here</span>
               </div>
             )}
           </div>
         </div>
 
-        <label className="flex items-center space-x-3 text-base text-slate-800 cursor-pointer justify-center mb-4">
+        <label className="flex items-center space-x-3 text-sm text-slate-800 cursor-pointer justify-center mb-2">
           <input
             type="checkbox"
             checked={analyzePartner}
@@ -138,16 +142,16 @@ export function CSVImporter({ onImportComplete }: { onImportComplete: () => void
         <button
           onClick={processImport}
           disabled={!file || isUploading || success}
-          className="w-full flex items-center justify-center space-x-3 py-3.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-600 hover:to-blue-400 text-slate-950 font-bold rounded-xl transition-all shadow-lg hover:shadow-blue-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full flex items-center justify-center space-x-3 py-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-600 hover:to-blue-400 text-slate-950 font-bold rounded-xl transition-all shadow-lg hover:shadow-blue-600/20 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
         >
           {isUploading ? (
             <>
-              <Loader2 className="w-5 h-5 animate-spin" />
+              <Loader2 className="w-4 h-4 animate-spin" />
               <span>Synthesizing API...</span>
             </>
           ) : (
             <>
-              <Sparkles className="w-5 h-5" />
+              <Sparkles className="w-4 h-4" />
               <span>Analyze & Import</span>
             </>
           )}
