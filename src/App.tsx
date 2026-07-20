@@ -154,9 +154,9 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 text-slate-900 flex flex-col items-center p-8 selection:bg-blue-200 overflow-hidden relative">
+    <div className="min-h-screen w-full bg-gray-50 text-slate-900 flex flex-col items-center p-4 selection:bg-blue-200 overflow-x-hidden relative">
       {/* Menu Button */}
-      <div className="absolute top-4 left-6 z-40">
+      <div className="absolute top-4 left-4 z-40">
         <button 
           onClick={() => setIsDrawerOpen(true)}
           className="p-2.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-100 backdrop-blur-md transition group shadow-lg"
@@ -307,250 +307,293 @@ export default function App() {
       </AnimatePresence>
 
       {/* Top right auth */}
-      <div className="absolute top-4 right-6 z-40">
+      <div className="absolute top-4 right-4 z-40">
         {user ? (
-          <div className="flex items-center space-x-4">
-            <span className="text-slate-600 text-base hidden md:inline">{user.email}</span>
+          <div className="flex items-center space-x-3">
+            <span className="text-slate-600 text-sm hidden md:inline">{user.email}</span>
             <button
               onClick={logout}
-              className="flex items-center space-x-3 text-base text-white px-4 py-2 rounded-full bg-blue-600 hover:bg-blue-700 transition shadow-md border border-blue-500/20 font-medium"
+              className="flex items-center space-x-2 text-sm text-white px-3.5 py-1.5 rounded-full bg-blue-600 hover:bg-blue-700 transition shadow-md border border-blue-500/20 font-medium"
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-3.5 h-3.5" />
               <span>Sign out</span>
             </button>
           </div>
         ) : (
           <button
             onClick={login}
-            className="text-base font-medium text-slate-900 bg-blue-600 hover:bg-blue-600 px-6 py-1.5 rounded-full transition shadow-lg shadow-blue-600/20"
+            className="text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 px-5 py-1.5 rounded-full transition shadow-lg shadow-blue-600/20"
           >
             Sign in
           </button>
         )}
       </div>
 
-      {/* Header and Tabs */}
-      <div className="w-full max-w-2xl text-center space-y-6 z-20 mt-4 mb-4">
-        <div className="space-y-6 flex flex-col items-center">
-          <h1 className="text-4xl md:text-5xl font-mono tracking-tighter font-semibold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-500">
-            Aura
-          </h1>
-          <div className="relative my-8">
-            <RobotFace 
-              isAiSpeaking={isSpeaking} 
-              isUserSpeaking={userIsSpeaking} 
-              isConnected={true} 
-              exaggerated={true}
-              mood={currentMood}
-            />
+      {!user ? (
+        <>
+          {/* Header and Tabs for Guests */}
+          <div className="w-full max-w-md text-center space-y-6 z-20 mt-12 mb-4">
+            <div className="space-y-6 flex flex-col items-center">
+              <h1 className="text-4xl md:text-5xl font-mono tracking-tighter font-semibold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-500">
+                Aura
+              </h1>
+              <div className="relative my-8">
+                <RobotFace 
+                  isAiSpeaking={isSpeaking} 
+                  isUserSpeaking={userIsSpeaking} 
+                  isConnected={true} 
+                  exaggerated={true}
+                  mood={currentMood}
+                />
+              </div>
+              <p className="text-slate-600 text-base max-w-sm mx-auto font-sans px-4">
+                Conversational Personality Analyzer. She listens, adapts, and learns about who you truly are through casual dialogue.
+              </p>
+            </div>
           </div>
-          <p className="text-slate-600 text-base md:text-base max-w-md mx-auto font-sans">
-            Conversational Personality Analyzer. She listens, adapts, and learns about who you truly are through casual dialogue.
-          </p>
-        </div>
 
-
-      </div>
-
-      <div className="flex-1 w-full flex flex-col items-center justify-center relative z-10 max-w-2xl px-6">
-        {!user ? (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="w-full bg-white/80 backdrop-blur-md rounded-3xl p-10 border border-slate-200 shadow-2xl flex flex-col items-center justify-center space-y-8 text-center"
-          >
-            <div className="w-16 h-16 rounded-2xl bg-blue-600/10 flex items-center justify-center border border-blue-600/20 mb-2">
-              <LogOut className="w-8 h-8 text-blue-600" />
-            </div>
-            <h2 className="text-2xl font-semibold text-slate-900">Sign in to continue</h2>
-            <p className="text-slate-600 max-w-sm">
-              Aura requires authentication to securely store your personality reports and historical insights.
-            </p>
-            <button
-              onClick={login}
-              className="mt-4 px-8 py-3 rounded-full bg-blue-600 text-white font-medium hover:bg-blue-600 transition-colors shadow-lg shadow-blue-600/20"
+          <div className="flex-1 w-full flex flex-col items-center justify-center relative z-10 max-w-md px-4 pb-12">
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="w-full bg-white/85 backdrop-blur-md rounded-3xl p-8 border border-slate-200 shadow-2xl flex flex-col items-center justify-center space-y-8 text-center"
             >
-              Sign in with Google
-            </button>
-          </motion.div>
-        ) : (
-          <>
-        {activeTab === 'voice' && (
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="w-full flex flex-col items-center space-y-12"
-          >
-            {/* RobotFace moved to main header */}
-
-            {/* Status & Controls */}
-            <div className="flex flex-col items-center space-y-8">
-              <AnimatePresence mode="wait">
-                {isError ? (
-                   <motion.div
-                     initial={{ opacity: 0, y: 10 }}
-                     animate={{ opacity: 1, y: 0 }}
-                     exit={{ opacity: 0, y: -10 }}
-                     className="flex items-center space-x-3 text-rose-600 bg-rose-50 px-6 py-2 rounded-full text-base font-medium"
-                   >
-                     <AlertCircle className="w-4 h-4" />
-                     <span>Connection failed. Make sure your microphone is enabled and try again.</span>
-                   </motion.div>
-                ) : isConnected ? (
-                   <motion.div
-                     initial={{ opacity: 0, y: 10 }}
-                     animate={{ opacity: 1, y: 0 }}
-                     exit={{ opacity: 0, y: -10 }}
-                     className="flex items-center space-x-3 text-emerald-600 text-base font-medium"
-                   >
-                     <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                     <span>
-                        {isSpeaking ? 'Aura is speaking...' : userIsSpeaking ? 'Aura is listening...' : 'Aura is connected'}
-                     </span>
-                   </motion.div>
-                ) : (
-                    <motion.div
-                     initial={{ opacity: 0, y: 10 }}
-                     animate={{ opacity: 1, y: 0 }}
-                     exit={{ opacity: 0, y: -10 }}
-                     className="text-slate-500 text-base font-medium"
-                   >
-                     Ready to begin your analysis.
-                   </motion.div>
-                )}
-              </AnimatePresence>
-
+              <div className="w-16 h-16 rounded-2xl bg-blue-600/10 flex items-center justify-center border border-blue-600/20 mb-2">
+                <LogOut className="w-8 h-8 text-blue-600" />
+              </div>
+              <h2 className="text-2xl font-semibold text-slate-900">Sign in to continue</h2>
+              <p className="text-slate-600 max-w-sm text-sm md:text-base">
+                Aura requires authentication to securely store your personality reports and historical insights.
+              </p>
               <button
-                onClick={isConnected ? disconnect : connect}
-                className={`group relative flex items-center justify-center w-16 h-16 rounded-full transition-all duration-300 shadow-xl ${
-                  isConnected 
-                    ? 'bg-rose-50 text-rose-500 hover:bg-rose-500/20 border border-rose-200' 
-                    : 'bg-blue-600 text-white hover:bg-blue-600 hover:scale-105 border border-blue-600/50'
-                }`}
+                onClick={login}
+                className="mt-4 px-8 py-3 rounded-full bg-blue-600 text-white font-medium hover:bg-blue-600 transition-colors shadow-lg shadow-blue-600/20"
               >
-                {isConnected ? (
-                  <MicOff className="w-6 h-6" />
-                ) : (
-                  <Mic className="w-6 h-6" />
-                )}
-                
-                {/* Soft pulsing ring if disconnected */}
-                {!isConnected && (
-                  <span className="absolute inset-0 rounded-full animate-ping bg-blue-600 opacity-20 group-hover:opacity-40" />
-                )}
+                Sign in with Google
               </button>
-            </div>
-          </motion.div>
-        )}
+            </motion.div>
+          </div>
+        </>
+      ) : (
+        <>
+          {activeTab === 'voice' ? (
+            <div className="flex-1 w-full max-w-md mx-auto flex flex-col items-center justify-between py-12 px-4 space-y-8 z-10">
+              {/* Top branding header */}
+              <div className="text-center space-y-2 mt-4">
+                <h1 className="text-4xl md:text-5xl font-mono tracking-tighter font-semibold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-500">
+                  Aura
+                </h1>
+              </div>
 
-        {activeTab === 'text' && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="w-full flex flex-col mt-8"
-          >
-            <div className="bg-white backdrop-blur-md rounded-2xl border border-slate-200 p-8 shadow-xl flex flex-col space-y-8">
-              <div className="space-y-2">
-                <h3 className="text-xl font-bold text-slate-900">History Analyzer</h3>
-                <p className="text-base text-slate-600 leading-relaxed">
-                  Paste a chat log, an email thread, or any text you've written. Aura will analyze your linguistic markers to build a personality report.
+              {/* Mascot orb */}
+              <div className="relative my-auto flex items-center justify-center min-h-[220px]">
+                <RobotFace 
+                  isAiSpeaking={isSpeaking} 
+                  isUserSpeaking={userIsSpeaking} 
+                  isConnected={true} 
+                  exaggerated={true}
+                  mood={currentMood}
+                />
+              </div>
+
+              {/* Center informational text */}
+              <div className="text-center max-w-sm px-2">
+                <p className="text-slate-600 text-base leading-relaxed font-sans">
+                  Conversational Personality Analyzer. She listens, adapts, and learns about who you truly are through casual dialogue.
                 </p>
               </div>
-              
-              <textarea
-                value={textInput}
-                onChange={(e) => setTextInput(e.target.value)}
-                placeholder="Paste your text history here..."
-                className="w-full h-48 bg-gray-50/50 border border-slate-200 rounded-xl p-8 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600/50 resize-none font-sans text-base"
-              />
 
-              <div className="flex items-center justify-between mt-4">
-                <label className="flex items-center space-x-3 text-base text-slate-800 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={analyzePartner}
-                    onChange={(e) => setAnalyzePartner(e.target.checked)}
-                    className="w-4 h-4 rounded border-slate-300 bg-white text-blue-600 focus:ring-blue-600/50"
-                  />
-                  <span>Analyze the other person's personality</span>
-                </label>
+              {/* Bottom microphone button & Connection status */}
+              <div className="w-full flex flex-col items-center space-y-6 mb-4">
+                <AnimatePresence mode="wait">
+                  {isError ? (
+                    <motion.div
+                      key="error"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="flex items-center space-x-3 text-rose-600 bg-rose-50 px-6 py-2 rounded-full text-sm font-medium text-center"
+                    >
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span>Connection failed. Check your microphone settings.</span>
+                    </motion.div>
+                  ) : isConnected ? (
+                    <motion.div
+                      key="connected"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="flex items-center space-x-3 text-emerald-600 text-base font-medium"
+                    >
+                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <span>
+                        {isSpeaking ? 'Aura is speaking...' : userIsSpeaking ? 'Aura is listening...' : 'Aura is connected'}
+                      </span>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="ready"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="text-slate-500 text-base font-medium"
+                    >
+                      Ready to begin your analysis.
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
-                <button 
-                  onClick={handleAnalyzeText}
-                  disabled={!textInput.trim() || isAnalyzing}
-                  className="px-6 py-3 rounded-full bg-blue-600 text-white font-medium hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed border border-blue-600/50 shadow-lg shadow-blue-600/20 flex items-center space-x-3"
+                <button
+                  onClick={isConnected ? disconnect : connect}
+                  className={`group relative flex items-center justify-center w-16 h-16 rounded-full transition-all duration-300 shadow-xl ${
+                    isConnected 
+                      ? 'bg-rose-50 text-rose-500 hover:bg-rose-500/20 border border-rose-200' 
+                      : 'bg-blue-600 text-white hover:bg-blue-600 hover:scale-105 border border-blue-600/50'
+                  }`}
                 >
-                  <MessageSquare className="w-4 h-4" />
-                  <span>{isAnalyzing ? 'Analyzing...' : 'Analyze Text Vibe'}</span>
+                  {isConnected ? (
+                    <MicOff className="w-6 h-6" />
+                  ) : (
+                    <Mic className="w-6 h-6" />
+                  )}
+                  {!isConnected && (
+                    <span className="absolute inset-0 rounded-full animate-ping bg-blue-600 opacity-20 group-hover:opacity-40" />
+                  )}
                 </button>
               </div>
             </div>
-          </motion.div>
-        )}
+          ) : (
+            <div className="flex-1 w-full max-w-4xl flex flex-col relative z-10 px-4 md:px-6">
+              {/* Compact Top Bar Header */}
+              <div className="w-full flex items-center justify-between border-b border-slate-200/60 pb-4 mb-6 mt-14">
+                <div className="flex items-center space-x-3">
+                  <div className="scale-75 origin-left">
+                    <RobotFace 
+                      isAiSpeaking={isSpeaking} 
+                      isUserSpeaking={userIsSpeaking} 
+                      isConnected={true} 
+                      exaggerated={false}
+                      mood={currentMood}
+                    />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl font-mono font-semibold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-500">
+                      Aura
+                    </h1>
+                    <p className="text-xs text-slate-500 font-sans capitalize">
+                      {activeTab === 'daily' ? 'Daily Mood Chat' : activeTab === 'trends' ? 'Trends & Insights' : activeTab === 'layered' ? 'Layered Insights' : activeTab === 'archive' ? 'Aura Archive' : activeTab === 'journal' ? 'Reflective Journaling' : 'Text History'}
+                    </p>
+                  </div>
+                </div>
+              </div>
 
-        {activeTab === 'layered' && (
-          <LayeredInsightsView reports={savedReports} saveReport={saveReport} />
-        )}
+              {/* View Components */}
+              {activeTab === 'text' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="w-full flex flex-col"
+                >
+                  <div className="bg-white backdrop-blur-md rounded-2xl border border-slate-200 p-6 md:p-8 shadow-xl flex flex-col space-y-6 md:space-y-8">
+                    <div className="space-y-2">
+                      <h3 className="text-xl font-bold text-slate-900">History Analyzer</h3>
+                      <p className="text-sm md:text-base text-slate-600 leading-relaxed">
+                        Paste a chat log, an email thread, or any text you've written. Aura will analyze your linguistic markers to build a personality report.
+                      </p>
+                    </div>
+                    
+                    <textarea
+                      value={textInput}
+                      onChange={(e) => setTextInput(e.target.value)}
+                      placeholder="Paste your text history here..."
+                      className="w-full h-48 bg-gray-50/50 border border-slate-200 rounded-xl p-4 md:p-8 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600/50 resize-none font-sans text-sm md:text-base"
+                    />
 
-        {activeTab === 'archive' && (
-          <PersonalityArchiveView reports={savedReports} />
-        )}
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mt-2">
+                      <label className="flex items-center space-x-3 text-sm md:text-base text-slate-800 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={analyzePartner}
+                          onChange={(e) => setAnalyzePartner(e.target.checked)}
+                          className="w-4 h-4 rounded border-slate-300 bg-white text-blue-600 focus:ring-blue-600/50"
+                        />
+                        <span>Analyze the other person's personality</span>
+                      </label>
 
-        {activeTab === 'trends' && (
-          <TrendsView 
-            reports={savedReports} 
-            onViewReport={(rp) => {
-              setAppReport(rp.report);
-              setShowReport(true);
-            }} 
-            onDeleteReport={deleteReport}
-          />
-        )}
+                      <button 
+                        onClick={handleAnalyzeText}
+                        disabled={!textInput.trim() || isAnalyzing}
+                        className="px-6 py-3 rounded-full bg-blue-600 text-white font-medium hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed border border-blue-600/50 shadow-lg shadow-blue-600/20 flex items-center justify-center space-x-3 self-end md:self-auto"
+                      >
+                        <MessageSquare className="w-4 h-4" />
+                        <span>{isAnalyzing ? 'Analyzing...' : 'Analyze Text Vibe'}</span>
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
 
-        {activeTab === 'journal' && (
-          <JournalView latestReport={savedReports.length > 0 ? savedReports[0].report : null} />
-        )}
+              {activeTab === 'layered' && (
+                <LayeredInsightsView reports={savedReports} saveReport={saveReport} />
+              )}
 
+              {activeTab === 'archive' && (
+                <PersonalityArchiveView reports={savedReports} />
+              )}
 
+              {activeTab === 'trends' && (
+                <TrendsView 
+                  reports={savedReports} 
+                  onViewReport={(rp) => {
+                    setAppReport(rp.report);
+                    setShowReport(true);
+                  }} 
+                  onDeleteReport={deleteReport}
+                />
+              )}
 
-        {activeTab === 'daily' && (
-          <DailyChatView 
-            latestReport={savedReports.length > 0 ? savedReports[0].report : null}
-            onAnalyzeChat={async (text, resetChat) => {
-              setIsAnalyzing(true);
-              try {
-                const response = await fetch('/api/analyze-text', {
-                  method: 'POST',
-                  headers: {
-        'Authorization': `Bearer ${(await auth.currentUser?.getIdToken()) || ''}`, 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ text }),
-                });
-                const data = await response.json();
-                if (data.mbti) {
-                  await saveReport(data);
-                  setAppReport(data);
-                  setShowReport(true);
-                  resetChat();
-                } else if (data.error) {
-                  alert("Error: " + data.error);
-                }
-              } catch(e) {
-                console.error(e);
-                alert("Failed analysis");
-              } finally {
-                setIsAnalyzing(false);
-              }
-            }}
-            isAnalyzing={isAnalyzing}
-          />
-        )}
+              {activeTab === 'journal' && (
+                <JournalView latestReport={savedReports.length > 0 ? savedReports[0].report : null} />
+              )}
 
-
-          </>
-        )}
-      </div>
+              {activeTab === 'daily' && (
+                <DailyChatView 
+                  latestReport={savedReports.length > 0 ? savedReports[0].report : null}
+                  onAnalyzeChat={async (text, resetChat) => {
+                    setIsAnalyzing(true);
+                    try {
+                      const response = await fetch('/api/analyze-text', {
+                        method: 'POST',
+                        headers: {
+                          'Authorization': `Bearer ${(await auth.currentUser?.getIdToken()) || ''}`,
+                          'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ text }),
+                      });
+                      const data = await response.json();
+                      if (data.mbti) {
+                        await saveReport(data);
+                        setAppReport(data);
+                        setShowReport(true);
+                        resetChat();
+                      } else if (data.error) {
+                        alert("Error: " + data.error);
+                      }
+                    } catch(e) {
+                      console.error(e);
+                      alert("Failed analysis");
+                    } finally {
+                      setIsAnalyzing(false);
+                    }
+                  }}
+                  isAnalyzing={isAnalyzing}
+                />
+              )}
+            </div>
+          )}
+        </>
+      )}
 
       <AnimatePresence>
         {showReport && appReport && (
