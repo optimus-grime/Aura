@@ -20,6 +20,7 @@ import { useFirebaseReports } from './hooks/useFirebaseReports';
 // Add to imports in App.tsx
 import { LayeredInsightsView } from './components/LayeredInsightsView';
 import { PersonalityArchiveView } from './components/PersonalityArchiveView';
+import { ShareAppSection } from './components/ShareAppSection';
 
 export default function App() {
   const { isConnected, isError, isSpeaking, userIsSpeaking, report, connect, disconnect } = useLiveAudio();
@@ -238,34 +239,34 @@ export default function App() {
                animate={{ opacity: 1 }}
                exit={{ opacity: 0 }}
                onClick={() => setShowSettings(false)}
-               className="fixed inset-0 bg-white backdrop-blur-sm"
+               className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm"
              />
              <motion.div 
                initial={{ opacity: 0, scale: 0.95 }}
                animate={{ opacity: 1, scale: 1 }}
                exit={{ opacity: 0, scale: 0.95 }}
-               className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-8 relative z-10 shadow-2xl max-h-[90vh] overflow-y-auto"
+               className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-6 md:p-8 relative z-10 shadow-2xl max-h-[90vh] overflow-y-auto"
              >
-                <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center justify-between mb-6">
                   <h3 className="text-xl font-semibold text-slate-900 flex items-center gap-2">
                     <Settings className="w-5 h-5 text-blue-600" />
                     Settings
                   </h3>
-                  <button onClick={() => setShowSettings(false)} className="text-slate-600 hover:text-slate-900">
+                  <button onClick={() => setShowSettings(false)} className="text-slate-600 hover:text-slate-900 p-1 rounded-lg hover:bg-slate-100 transition">
                     <X className="w-5 h-5" />
                   </button>
                 </div>
 
-                <div className="space-y-8">
+                <div className="space-y-6">
                   {/* Daily Reminder Toggle */}
-                  <div className="flex items-center justify-between bg-slate-100 p-8 rounded-xl border border-slate-200">
+                  <div className="flex items-center justify-between bg-slate-50 p-4 rounded-xl border border-slate-200">
                     <div className="flex items-center gap-3">
                       <div className={`p-2 rounded-lg ${dailyReminderEnabled ? 'bg-blue-600/10 text-blue-600' : 'bg-slate-100 text-slate-500'}`}>
                          {dailyReminderEnabled ? <Bell className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
                       </div>
                       <div>
                         <p className="text-slate-900 font-medium text-base">Daily Reminders</p>
-                        <p className="text-slate-600 text-sm mt-0.5">Nudge me to complete my daily chat</p>
+                        <p className="text-slate-600 text-xs mt-0.5">Nudge me to complete my daily chat</p>
                       </div>
                     </div>
                     <button 
@@ -277,10 +278,13 @@ export default function App() {
                   </div>
                   
                   {Notification.permission === 'denied' && (
-                    <p className="text-sm text-rose-600 bg-rose-50 p-3 rounded-lg border border-rose-200">
+                    <p className="text-xs text-rose-600 bg-rose-50 p-3 rounded-lg border border-rose-200">
                        You have blocked notifications in your browser. Please enable them in your browser settings to use this feature.
                     </p>
                   )}
+
+                  {/* Share App Section */}
+                  <ShareAppSection />
 
                   {/* CSV Import */}
                   <div className="border-t border-slate-200 pt-6">
@@ -290,7 +294,7 @@ export default function App() {
                       </div>
                       <div>
                         <p className="text-slate-900 font-medium text-base">Import External Data</p>
-                        <p className="text-slate-600 text-sm mt-0.5 font-sans">
+                        <p className="text-slate-600 text-xs mt-0.5 font-sans">
                           Load previous journal entries or mood logs from a CSV.
                         </p>
                       </div>
