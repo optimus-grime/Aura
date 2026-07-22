@@ -9,7 +9,7 @@ import { TrendsView } from './components/TrendsView';
 import { JournalView } from './components/JournalView';
 import { DailyChatView } from './components/DailyChatView';
 import { CSVImporter } from './components/CSVImporter';
-import { Mic, MicOff, AlertCircle, MessageSquare, TrendingUp, BookOpen, LogOut, MessageCircle, Menu, X, Settings, Bell, BellOff, Layers, UploadCloud, Archive } from 'lucide-react';
+import { Mic, MicOff, AlertCircle, MessageSquare, TrendingUp, BookOpen, LogOut, MessageCircle, Menu, X, Settings, Bell, BellOff, Layers, UploadCloud, Archive, Calendar } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useState, useEffect, useRef } from 'react';
 import { SavedReport, ReportData } from './types';
@@ -26,7 +26,7 @@ export default function App() {
   const { isConnected, isError, isSpeaking, userIsSpeaking, report, connect, disconnect } = useLiveAudio();
   const [showReport, setShowReport] = useState(false);
   const [appReport, setAppReport] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'voice' | 'text' | 'daily' | 'trends' | 'history' | 'journal' | 'layered' | 'archive'>('voice');
+  const [activeTab, setActiveTab] = useState<'voice' | 'text' | 'daily' | 'calendar' | 'trends' | 'history' | 'journal' | 'layered' | 'archive'>('voice');
 
   const [textInput, setTextInput] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -485,7 +485,7 @@ export default function App() {
                       Aura
                     </h1>
                     <p className="text-xs text-slate-500 font-sans capitalize">
-                      {activeTab === 'daily' ? 'Daily Mood Chat' : activeTab === 'trends' ? 'Trends & Insights' : activeTab === 'layered' ? 'Layered Insights' : activeTab === 'archive' ? 'Aura Archive' : activeTab === 'journal' ? 'Reflective Journaling' : 'Text History'}
+                      {activeTab === 'daily' ? 'Daily Mood Chat' : activeTab === 'calendar' ? '30-Day Mood Calendar' : activeTab === 'trends' ? 'Trends & Insights' : activeTab === 'layered' ? 'Layered Insights' : activeTab === 'archive' ? 'Aura Archive' : activeTab === 'journal' ? 'Reflective Journaling' : 'Text History'}
                     </p>
                   </div>
                 </div>
@@ -544,6 +544,18 @@ export default function App() {
 
               {activeTab === 'archive' && (
                 <PersonalityArchiveView reports={savedReports} />
+              )}
+
+              {activeTab === 'calendar' && (
+                <TrendsView 
+                  reports={savedReports} 
+                  initialViewMode="calendar"
+                  onViewReport={(rp) => {
+                    setAppReport(rp.report);
+                    setShowReport(true);
+                  }} 
+                  onDeleteReport={deleteReport}
+                />
               )}
 
               {activeTab === 'trends' && (

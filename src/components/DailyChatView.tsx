@@ -264,11 +264,16 @@ export function DailyChatView({ latestReport, onAnalyzeChat, isAnalyzing }: Dail
       ]);
     } catch (e: any) {
       console.error(e);
+      const isNegativeMood = ['sad', 'anxious', 'angry'].includes(t1);
+      const fallbackAck = isNegativeMood
+        ? `I have recorded your mood as "${moodStr}". Thank you for sharing that with me—I'm here if you'd like to talk through what's on your mind.`
+        : `I have recorded your mood as "${moodStr}" and added it to your timeline history.`;
+
       setChatHistory([
         ...newHistory, 
         { 
           role: 'model', 
-          text: `Great choice! I have recorded your mood as "${moodStr}" and added it to your timeline history.`,
+          text: fallbackAck,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }
       ]);

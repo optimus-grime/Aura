@@ -39,7 +39,7 @@ const authenticateUser = async (req, res, next) => {
 
 async function startServer() {
   const app = express();
-  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 8080;
+  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
   
   const httpServer = createServer(app);
   const wss = new WebSocketServer({ server: httpServer, path: '/live' });
@@ -498,7 +498,12 @@ CRITICAL COMMUNICATION RULES (AVOID REPETITION):
 2. EVOLVE THE CONVERSATION: Never ask the same type of question twice. If you asked about a specific moment, next pivot to what they plan to do next, or share a related observation.
 3. NATURAL ENDINGS: It is perfectly fine to NOT end your message with a question. If their thought feels complete or simple (e.g., "just enjoying the presence"), simply validate it nicely and perhaps share a brief reflection. Do not force another question.
 4. NO ECHOING: Do not just rephrase what they just said in a long-winded way. Keep it concise.
-5. NO FLUFF: Reduce the usage of filler like "That makes perfect sense" or "That is a beautiful way to put it." Be more varied and natural.`;
+5. NO FLUFF: Reduce the usage of filler like "That makes perfect sense" or "That is a beautiful way to put it." Be more varied and natural.
+6. MOOD LOGGING & TONE SENSITIVITY:
+   - When the user logs a mood (e.g. "I have logged my mood for today..."), acknowledge it with an emotionally appropriate tone.
+   - ABSOLUTELY NEVER say "Great choice!", "Awesome choice!", "Good choice!", "Nice choice!", or "Congratulations!" when recording negative, sad, anxious, angry, stressed, or low-energy moods (e.g. Sad, Anxious, Angry, Exhausted, Deflated, Overwhelmed).
+   - For sad, anxious, angry, or low-energy moods, validate their state gently and compassionately (e.g., "I've recorded how you're feeling today. I'm sorry to hear you're feeling low-energy or deflated—I'm here if you'd like to share what's on your mind or just vent.").
+   - For positive or calm moods, acknowledge with warm validation. Always match your tone to the emotion logged.`;
 
       const contents = history.map((h: any) => ({
         role: h.role,

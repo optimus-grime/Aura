@@ -7,11 +7,13 @@ import { Trash2, Info, CloudLightning, FileText } from 'lucide-react';
 import { toCanvas } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 import { AnalysisReport } from './AnalysisReport';
+import { MoodCalendarView } from './MoodCalendarView';
 
 interface TrendsViewProps {
   reports: SavedReport[];
   onViewReport: (report: SavedReport) => void;
   onDeleteReport: (id: string) => void;
+  initialViewMode?: 'timeline' | 'calendar' | 'comparison';
 }
 
 const TRAITS = [
@@ -76,11 +78,11 @@ const SmallMultipleTooltip = ({ active, payload, traitName, traitColor }: any) =
   return null;
 };
 
-export function TrendsView({ reports, onViewReport, onDeleteReport }: TrendsViewProps) {
+export function TrendsView({ reports, onViewReport, onDeleteReport, initialViewMode }: TrendsViewProps) {
   const [selectedTraits, setSelectedTraits] = useState<string[]>(['openness', 'conscientiousness', 'extraversion', 'agreeableness', 'neuroticism']);
   const [activeTraitInfo, setActiveTraitInfo] = useState<string | null>(null);
   
-  const [viewMode, setViewMode] = useState<'timeline' | 'comparison'>('timeline');
+  const [viewMode, setViewMode] = useState<'timeline' | 'calendar' | 'comparison'>(initialViewMode || 'timeline');
   const [compareReport1Id, setCompareReport1Id] = useState<string | null>(reports.length > 0 ? reports[0].id : null);
   const [compareReport2Id, setCompareReport2Id] = useState<string | null>(reports.length > 1 ? reports[1].id : null);
   
@@ -201,16 +203,22 @@ export function TrendsView({ reports, onViewReport, onDeleteReport }: TrendsView
       <div className="flex justify-between items-center w-full">
         <h2 className="text-2xl font-bold text-slate-900 hidden sm:block">Timeline Analysis</h2>
         
-        <div className="flex bg-white/80 p-1 rounded-xl border border-slate-200/80 w-fit">
+        <div className="flex bg-white/80 p-1 rounded-xl border border-slate-200/80 w-fit flex-wrap gap-1">
           <button
             onClick={() => setViewMode('timeline')}
-            className={`px-6 py-2 rounded-lg text-base font-medium transition-all ${viewMode === 'timeline' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'}`}
+            className={`px-4 sm:px-6 py-2 rounded-lg text-sm sm:text-base font-medium transition-all ${viewMode === 'timeline' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'}`}
           >
             Timeline
           </button>
           <button
+            onClick={() => setViewMode('calendar')}
+            className={`px-4 sm:px-6 py-2 rounded-lg text-sm sm:text-base font-medium transition-all ${viewMode === 'calendar' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'}`}
+          >
+            Mood Calendar
+          </button>
+          <button
             onClick={() => setViewMode('comparison')}
-            className={`px-6 py-2 rounded-lg text-base font-medium transition-all ${viewMode === 'comparison' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'}`}
+            className={`px-4 sm:px-6 py-2 rounded-lg text-sm sm:text-base font-medium transition-all ${viewMode === 'comparison' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'}`}
           >
             Compare Reports
           </button>
@@ -225,7 +233,9 @@ export function TrendsView({ reports, onViewReport, onDeleteReport }: TrendsView
         </button>
       </div>
 
-      {viewMode === 'timeline' ? (
+      {viewMode === 'calendar' ? (
+        <MoodCalendarView reports={reports} onViewReport={onViewReport} />
+      ) : viewMode === 'timeline' ? (
       <div className="bg-white backdrop-blur-md rounded-2xl border border-slate-200 p-8 shadow-xl w-full">
         <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
           <h3 className="text-lg font-semibold text-slate-900">Big Five Trends over Time</h3>
