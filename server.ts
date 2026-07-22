@@ -94,15 +94,6 @@ async function startServer() {
     });
   }
 
-  const ai = new GoogleGenAI({ 
-    apiKey,
-    httpOptions: {
-      headers: {
-        'User-Agent': 'aistudio-build',
-      }
-    }
-  });
-
   const withRetry = async <T>(operation: () => Promise<T>, maxRetries = 3): Promise<T> => {
     let attempt = 0;
     while (attempt < maxRetries) {
@@ -250,7 +241,7 @@ async function startServer() {
         return res.status(400).json({ error: 'Insight data is required' });
       }
 
-      const response = await withRetry(() => ai.models.generateContent({
+      const response = await withRetry(() => getGenAI().models.generateContent({
         model: 'gemini-2.5-flash',
         contents: JSON.stringify(insightData),
         config: {
@@ -279,7 +270,7 @@ Convert this layered insight synthesis into a unified, concise executive summary
         return res.status(400).json({ error: 'Array of reports is required' });
       }
 
-      const response = await withRetry(() => ai.models.generateContent({
+      const response = await withRetry(() => getGenAI().models.generateContent({
         model: 'gemini-2.5-flash',
         contents: JSON.stringify(reports),
         config: {
@@ -329,7 +320,7 @@ Convert this layered insight synthesis into a unified, concise executive summary
         ? `Focus your analysis SOLELY on the OTHER person involved in the conversation (their partner/interlocutor) based on how they respond in the data. Map the traits and personality of the OTHER person.`
         : `Analyze this historical dataset as a single, large corpus of psychological and behavioral data for the primary user.`;
 
-      const response = await withRetry(() => ai.models.generateContent({
+      const response = await withRetry(() => getGenAI().models.generateContent({
         model: 'gemini-2.5-flash',
         contents: `I have imported a CSV file named "${filename}" containing historical behavioral data, journal entries, or mood logs.
 Here is the JSON representation of up to 150 rows of this data:
@@ -363,7 +354,7 @@ ${subjectInstruction} Produce a comprehensive, synthesis profile mimicking a psy
         ? `Determine who the "Primary Subject" (the person who pasted the text) is, and focus your analysis SOLELY on the OTHER person involved in the conversation (their partner/interlocutor). Map the traits and personality of the OTHER person.`
         : `Determine who the "Primary Subject" is and focus your analysis solely on them.`;
 
-      const response = await withRetry(() => ai.models.generateContent({
+      const response = await withRetry(() => getGenAI().models.generateContent({
         model: 'gemini-2.5-flash',
         contents: text,
         config: {
@@ -395,7 +386,7 @@ You MUST respond with JSON matching the required schema.`,
         return res.status(400).json({ error: 'Both reports are required' });
       }
 
-      const response = await withRetry(() => ai.models.generateContent({
+      const response = await withRetry(() => getGenAI().models.generateContent({
         model: 'gemini-2.5-flash',
         contents: `Compare these two personality reports:
 Report 1 (Baseline): ${JSON.stringify(report1)}
@@ -439,7 +430,7 @@ Report 2 (Comparison): ${JSON.stringify(report2)}`,
         return res.status(400).json({ error: 'Profile is required' });
       }
 
-      const response = await withRetry(() => ai.models.generateContent({
+      const response = await withRetry(() => getGenAI().models.generateContent({
         model: 'gemini-2.5-flash',
         contents: JSON.stringify(profile),
         config: {
@@ -481,7 +472,7 @@ Report 2 (Comparison): ${JSON.stringify(report2)}`,
         return res.status(400).json({ error: 'Profile is required' });
       }
 
-      const response = await withRetry(() => ai.models.generateContent({
+      const response = await withRetry(() => getGenAI().models.generateContent({
         model: 'gemini-2.5-flash',
         contents: JSON.stringify(profile),
         config: {
@@ -557,7 +548,7 @@ CRITICAL COMMUNICATION RULES (AVOID REPETITION):
       
       contents.push({ role: 'user', parts: [{ text: message }] });
 
-      const response = await withRetry(() => ai.models.generateContent({
+      const response = await withRetry(() => getGenAI().models.generateContent({
         model: 'gemini-2.5-flash',
         contents,
         config: { systemInstruction }
@@ -606,7 +597,7 @@ CRITICAL INSTRUCTIONS TO AVOID REPETITION:
       
       contents.push({ role: 'user', parts: [{ text: message }] });
 
-      const response = await withRetry(() => ai.models.generateContent({
+      const response = await withRetry(() => getGenAI().models.generateContent({
         model: 'gemini-2.5-flash',
         contents,
         config: { systemInstruction }
@@ -641,7 +632,7 @@ Do not use overly clinical jargon unless you are briefly explaining a term like 
       
       contents.push({ role: 'user', parts: [{ text: message }] });
 
-      const response = await withRetry(() => ai.models.generateContent({
+      const response = await withRetry(() => getGenAI().models.generateContent({
         model: 'gemini-2.5-flash',
         contents,
         config: { systemInstruction }
@@ -716,7 +707,7 @@ Ask follow-up questions designed to understand their worldview and daily decisio
     
     let session;
     try {
-      session = await ai.live.connect({
+      session = await getGenAI().live.connect({
         model: 'gemini-3.1-flash-live-preview',
         callbacks: {
           onmessage: (message: any) => {
