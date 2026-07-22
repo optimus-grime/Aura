@@ -46,7 +46,9 @@ async function startServer() {
 
   const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || '';
   if (!apiKey) {
-    console.warn("Warning: GEMINI_API_KEY or API_KEY environment variable is missing.");
+    console.warn("WARNING: Neither GEMINI_API_KEY nor API_KEY environment variable is set in process.env.");
+  } else {
+    console.log("Gemini API key successfully found in process.env.");
   }
 
   function formatApiError(e: any): string {
