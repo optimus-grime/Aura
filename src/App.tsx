@@ -34,9 +34,32 @@ export default function App() {
   const [user, setUser] = useState(auth.currentUser);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [apiErrorMessage, setApiErrorMessage] = useState<string | null>(null);
   const [dailyReminderEnabled, setDailyReminderEnabled] = useState(() => {
     return localStorage.getItem('daily_reminder_enabled') === 'true';
   });
+
+  const parseAndShowError = (err: any) => {
+    const rawMsg = typeof err === 'string' ? err : (err?.message || String(err));
+    let cleanMsg = rawMsg;
+    if (typeof rawMsg === 'string' && rawMsg.trim().startsWith('{')) {
+      try {
+        const parsed = JSON.parse(rawMsg);
+        if (parsed.error?.message) {
+          cleanMsg = parsed.error.message;
+        }
+      } catch (_) {}
+    }
+    if (
+      cleanMsg.includes('unregistered callers') || 
+      cleanMsg.includes('API Key') || 
+      cleanMsg.includes('PERMISSION_DENIED') ||
+      cleanMsg.includes('403')
+    ) {
+      cleanMsg = 'Gemini API key is missing or invalid. Please set GEMINI_API_KEY in your application settings or environment variables.';
+    }
+    setApiErrorMessage(cleanMsg);
+  };
 
   const { savedReports, saveReport, deleteReport } = useFirebaseReports();
 
@@ -148,7 +171,7 @@ export default function App() {
       setShowReport(true);
     } catch (err: any) {
       console.error(err);
-      alert(err.message || 'Failed to analyze text. Please try again.');
+      parseAndShowError(err.message || 'Failed to analyze text. Please try again.');
     } finally {
       setIsAnalyzing(false);
     }
@@ -594,11 +617,11 @@ export default function App() {
                         setShowReport(true);
                         resetChat();
                       } else if (data.error) {
-                        alert("Error: " + data.error);
+                        parseAndShowError(data.error);
                       }
-                    } catch(e) {
+                    } catch(e: any) {
                       console.error(e);
-                      alert("Failed analysis");
+                      parseAndShowError(e?.message || "Failed analysis");
                     } finally {
                       setIsAnalyzing(false);
                     }
@@ -621,6 +644,35 @@ export default function App() {
            >
               <AnalysisReport report={appReport} onClose={() => setShowReport(false)} />
            </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {apiErrorMessage && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+          >
+            <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-red-100 flex flex-col items-center text-center space-y-4">
+              <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center">
+                <AlertCircle className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-lg font-semibold text-slate-900">API Connection Issue</h3>
+                <p className="text-sm text-slate-600 leading-relaxed">
+                  {apiErrorMessage}
+                </p>
+              </div>
+              <button
+                onClick={() => setApiErrorMessage(null)}
+                className="w-full py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-xl transition shadow-md"
+              >
+                Dismiss
+              </button>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
 

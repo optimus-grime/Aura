@@ -92,6 +92,7 @@ export function TrendsView({ reports, onViewReport, onDeleteReport, initialViewM
   const [exportingReportId, setExportingReportId] = useState<string | null>(null);
   const [comparisonSummary, setComparisonSummary] = useState<{ summary: string; keyDifferences: { trait: string; meaning: string }[] } | null>(null);
   const [isComparing, setIsComparing] = useState(false);
+  const [compareError, setCompareError] = useState<string | null>(null);
 
   const trendsRef = useRef<HTMLDivElement>(null);
   
@@ -160,6 +161,7 @@ export function TrendsView({ reports, onViewReport, onDeleteReport, initialViewM
     if (!rep1 || !rep2) return;
     setIsComparing(true);
     setComparisonSummary(null);
+    setCompareError(null);
     try {
       const response = await fetch('/api/compare-reports', {
         method: 'POST',
@@ -173,11 +175,15 @@ export function TrendsView({ reports, onViewReport, onDeleteReport, initialViewM
       if (data.summary) {
         setComparisonSummary(data);
       } else if (data.error) {
-        alert(data.error);
+        let errStr = data.error;
+        if (typeof errStr === 'string' && errStr.includes('unregistered callers')) {
+          errStr = 'Gemini API key is missing or invalid. Please configure GEMINI_API_KEY in application settings.';
+        }
+        setCompareError(errStr);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      alert('Failed to fetch comparison.');
+      setCompareError(e?.message || 'Failed to fetch comparison.');
     } finally {
       setIsComparing(false);
     }
@@ -549,6 +555,11 @@ export function TrendsView({ reports, onViewReport, onDeleteReport, initialViewM
 
                       {/* Comparison Summary Section */}
                       <div className="w-full mt-6 flex flex-col items-center">
+                        {compareError && (
+                          <div className="p-4 mb-4 bg-red-50 text-red-700 border border-red-200 rounded-xl text-sm max-w-lg text-center">
+                            {compareError}
+                          </div>
+                        )}
                         {!comparisonSummary && !isComparing && (
                           <button
                             onClick={handleCompare}

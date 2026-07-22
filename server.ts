@@ -49,6 +49,51 @@ async function startServer() {
     console.warn("Warning: GEMINI_API_KEY or API_KEY environment variable is missing.");
   }
 
+  function formatApiError(e: any): string {
+    if (!e) return 'An unknown error occurred.';
+    const rawMsg = typeof e === 'string' ? e : (e.message || String(e));
+    
+    if (
+      rawMsg.includes('unregistered callers') || 
+      rawMsg.includes('API Key') || 
+      rawMsg.includes('PERMISSION_DENIED') ||
+      rawMsg.includes('403') ||
+      (!process.env.GEMINI_API_KEY && !process.env.API_KEY)
+    ) {
+      return 'Gemini API key is missing or invalid. Please configure GEMINI_API_KEY in application settings.';
+    }
+
+    if (rawMsg.includes('RESOURCE_EXHAUSTED') || rawMsg.includes('429')) {
+      return 'API rate limit exceeded. Please wait a moment and try again.';
+    }
+
+    try {
+      const parsed = JSON.parse(rawMsg);
+      if (parsed.error?.message) {
+        return parsed.error.message;
+      }
+    } catch (_) {
+      // Ignore JSON parse error
+    }
+
+    return rawMsg;
+  }
+
+  function getGenAI() {
+    const key = process.env.GEMINI_API_KEY || process.env.API_KEY || '';
+    if (!key) {
+      throw new Error('Gemini API key is not configured. Please set GEMINI_API_KEY in application settings.');
+    }
+    return new GoogleGenAI({ 
+      apiKey: key,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build',
+        }
+      }
+    });
+  }
+
   const ai = new GoogleGenAI({ 
     apiKey,
     httpOptions: {
@@ -223,7 +268,7 @@ Convert this layered insight synthesis into a unified, concise executive summary
       res.json(result);
     } catch (e: any) {
       console.error('Error summarizing layered insights:', e);
-      res.status(500).json({ error: e.message || String(e) });
+      res.status(500).json({ error: formatApiError(e) });
     }
   });
 
@@ -269,7 +314,7 @@ Convert this layered insight synthesis into a unified, concise executive summary
       res.json(result);
     } catch (e: any) {
       console.error('Error generating layered insights:', e);
-      res.status(500).json({ error: e.message || String(e) });
+      res.status(500).json({ error: formatApiError(e) });
     }
   });
 
@@ -303,7 +348,7 @@ ${subjectInstruction} Produce a comprehensive, synthesis profile mimicking a psy
       res.json(result);
     } catch (e: any) {
       console.error('Error processing CSV import:', e);
-      res.status(500).json({ error: e.message || String(e) });
+      res.status(500).json({ error: formatApiError(e) });
     }
   });
 
@@ -339,7 +384,7 @@ You MUST respond with JSON matching the required schema.`,
       res.json(result);
     } catch (e: any) {
       console.error('Error analyzing text:', e);
-      res.status(500).json({ error: e.message || String(e) });
+      res.status(500).json({ error: formatApiError(e) });
     }
   });
 
@@ -383,7 +428,7 @@ Report 2 (Comparison): ${JSON.stringify(report2)}`,
       res.json(result);
     } catch (e: any) {
       console.error('Error comparing reports:', e);
-      res.status(500).json({ error: e.message || String(e) });
+      res.status(500).json({ error: formatApiError(e) });
     }
   });
 
@@ -425,7 +470,7 @@ Report 2 (Comparison): ${JSON.stringify(report2)}`,
       res.json(result);
     } catch (e: any) {
       console.error('Error generating journal prompts:', e);
-      res.status(500).json({ error: e.message || String(e) });
+      res.status(500).json({ error: formatApiError(e) });
     }
   });
 
@@ -471,7 +516,7 @@ Report 2 (Comparison): ${JSON.stringify(report2)}`,
       res.json(result);
     } catch (e: any) {
       console.error('Error generating strategies:', e);
-      res.status(500).json({ error: e.message || String(e) });
+      res.status(500).json({ error: formatApiError(e) });
     }
   });
 
@@ -521,7 +566,7 @@ CRITICAL COMMUNICATION RULES (AVOID REPETITION):
       res.json({ reply: response.text });
     } catch (e: any) {
       console.error('Error in daily chat:', e);
-      res.status(500).json({ error: e.message || String(e) });
+      res.status(500).json({ error: formatApiError(e) });
     }
   });
 
@@ -570,7 +615,7 @@ CRITICAL INSTRUCTIONS TO AVOID REPETITION:
       res.json({ reply: response.text });
     } catch (e: any) {
       console.error('Error in journal chat:', e);
-      res.status(500).json({ error: e.message || String(e) });
+      res.status(500).json({ error: formatApiError(e) });
     }
   });
 
@@ -605,7 +650,7 @@ Do not use overly clinical jargon unless you are briefly explaining a term like 
       res.json({ reply: response.text });
     } catch (e: any) {
       console.error('Error in report chat:', e);
-      res.status(500).json({ error: e.message || String(e) });
+      res.status(500).json({ error: formatApiError(e) });
     }
   });
 

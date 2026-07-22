@@ -134,6 +134,7 @@ export function DailyChatView({ latestReport, onAnalyzeChat, isAnalyzing }: Dail
   const [tier1, setTier1] = useState<string | null>(null);
   const [tier2, setTier2] = useState<string | null>(null);
   const [tier3, setTier3] = useState<string | null>(null);
+  const [chatWarning, setChatWarning] = useState<string | null>(null);
 
   useEffect(() => {
     localStorage.setItem('daily_chat_history', JSON.stringify(chatHistory));
@@ -306,13 +307,14 @@ export function DailyChatView({ latestReport, onAnalyzeChat, isAnalyzing }: Dail
   };
 
   const handleAnalyze = () => {
+    setChatWarning(null);
     const allUserText = chatHistory
        .filter(h => h.role === 'user')
        .map(h => h.text)
        .join('\n\n');
        
     if (allUserText.trim().length < 20) {
-      alert("You might want to chat a bit more first so we have enough context to analyze your traits!");
+      setChatWarning("You might want to chat a bit more first so we have enough context to analyze your traits!");
       return;
     }
     
@@ -373,6 +375,13 @@ export function DailyChatView({ latestReport, onAnalyzeChat, isAnalyzing }: Dail
                 </button>
             </div>
         </div>
+
+        {chatWarning && (
+          <div className="p-4 bg-amber-50 text-amber-800 border border-amber-200 rounded-2xl flex items-center justify-between text-sm shadow-sm">
+            <span>{chatWarning}</span>
+            <button onClick={() => setChatWarning(null)} className="text-amber-600 font-semibold text-xs uppercase hover:underline ml-4">Dismiss</button>
+          </div>
+        )}
 
         {/* Tap-to-Refine 3-Tier Mood Selector */}
         <div className={`p-8 rounded-3xl flex flex-col space-y-6 border transition-all duration-500 ease-in-out ${
