@@ -39,16 +39,18 @@ const authenticateUser = async (req, res, next) => {
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
-  
-
-
+  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 8080;
   
   const httpServer = createServer(app);
   const wss = new WebSocketServer({ server: httpServer, path: '/live' });
 
+  const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || '';
+  if (!apiKey) {
+    console.warn("Warning: GEMINI_API_KEY or API_KEY environment variable is missing.");
+  }
+
   const ai = new GoogleGenAI({ 
-    apiKey: process.env.GEMINI_API_KEY,
+    apiKey,
     httpOptions: {
       headers: {
         'User-Agent': 'aistudio-build',
