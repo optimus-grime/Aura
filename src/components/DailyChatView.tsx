@@ -44,29 +44,29 @@ const TIER1_MOODS = [
 ];
 
 const TIER2_OPTIONS: Record<string, string[]> = {
-  happy: ["In the zone", "On top of things", "Clear & focused"],
-  relaxed: ["Cruising along", "Steady & calm", "Just chilling"],
-  sad: ["Running on empty", "Foggy & slow", "Need a break"],
-  anxious: ["On edge", "Restless", "Racing thoughts"],
-  angry: ["Overwhelmed", "Irritated", "Tense"]
+  happy: ["In the zone", "On top of things", "Feeling unstoppable"],
+  relaxed: ["Cruising along", "At ease", "Just chilling"],
+  sad: ["Running on empty", "Feeling weighed down", "Need a break"],
+  anxious: ["On edge", "Racing thoughts", "Feeling unprepared"],
+  angry: ["Feeling attacked", "At boiling point", "Pushed too far"]
 };
 
 const TIER3_VOCABULARY: Record<string, string[]> = {
   "In the zone": ["Focused", "Inspired", "Energized", "Motivated", "Ambitious", "Accomplished"],
   "On top of things": ["Confident", "Empowered", "Pleased", "Optimistic", "Satisfied", "Proud"],
-  "Clear & focused": ["Calm", "Peaceful", "Zen", "Mindful", "Contemplative", "Thoughtful"],
-  "Cruising along": ["Carefree", "Mellow", "Content", "Chill", "Lighthearted", "Bright"],
-  "Steady & calm": ["Composed", "Serene", "Settled", "Tranquil", "Comforted", "Safe"],
-  "Just chilling": ["Chilled", "Relaxed", "Apathetic", "Quiet", "Unbothered", "Lazy"],
-  "Running on empty": ["Depleted", "Drained", "Exhausted", "Weary", "Lethargic", "Downcast"],
-  "Foggy & slow": ["Listless", "Groggy", "Confused", "Apathetic", "Slow", "Lost"],
-  "Need a break": ["Overwhelmed", "Stressed", "Tired", "Deflated", "Blue", "Glum"],
-  "On edge": ["Antsy", "Uneasy", "Tense", "Edgy", "Jittery", "Nervous"],
-  "Restless": ["Restless", "Aflutter", "Jumpy", "Agitated", "Fretful", "Unsettled"],
-  "Racing thoughts": ["Apprehensive", "Panicked", "Overwhelmed", "Worried", "Fearful", "Bewildered"],
-  "Overwhelmed": ["Stressed", "Frustrated", "Tense", "Irritated", "Distressed", "Agitated"],
-  "Irritated": ["Annoyed", "Cranky", "Bothered", "Aggravated", "Grumpy", "Touchy"],
-  "Tense": ["Uptight", "Irritated", "Hostile", "Restless", "Oppressed", "Tense"]
+  "Feeling unstoppable": ["Invincible", "Triumphant", "Elated", "Ecstatic", "Exuberant", "Radiant"],
+  "Cruising along": ["Carefree", "Mellow", "Content", "Lighthearted", "Peaceful", "Serene"],
+  "At ease": ["Composed", "Settled", "Tranquil", "Comforted", "Unhurried", "Restful"],
+  "Just chilling": ["Unbothered", "Placid", "Untroubled", "Soothed", "Easygoing", "Quiet"],
+  "Running on empty": ["Depleted", "Drained", "Exhausted", "Weary", "Lethargic", "Spent"],
+  "Feeling weighed down": ["Melancholic", "Despondent", "Gloomy", "Heartbroken", "Sorrowful", "Heavy"],
+  "Need a break": ["Deflated", "Blue", "Glum", "Dejected", "Downcast", "Disheartened"],
+  "On edge": ["Antsy", "Uneasy", "Edgy", "Jittery", "Nervous", "Apprehensive"],
+  "Racing thoughts": ["Panicked", "Worried", "Fearful", "Bewildered", "Overstimulated", "Distracted"],
+  "Feeling unprepared": ["Hesitant", "Insecure", "Uncertain", "Vulnerable", "Timid", "Doubtful"],
+  "Feeling attacked": ["Defensive", "Resentful", "Bitter", "Aggrieved", "Indignant", "Hostile"],
+  "At boiling point": ["Furious", "Enraged", "Incensed", "Infuriated", "Irate", "Outraged"],
+  "Pushed too far": ["Frustrated", "Irritated", "Agitated", "Exasperated", "Annoyed", "Cranky"]
 };
 
 const CONTAINER_AMBIENT_STYLES: Record<string, { bg: string; border: string; shadow: string }> = {
@@ -135,6 +135,18 @@ export function DailyChatView({ latestReport, onAnalyzeChat, isAnalyzing }: Dail
   const [tier2, setTier2] = useState<string | null>(null);
   const [tier3, setTier3] = useState<string | null>(null);
   const [chatWarning, setChatWarning] = useState<string | null>(null);
+
+  // Reset handler: Auto-reset Tier 2 and Tier 3 whenever Tier 1 changes
+  const handleSelectTier1 = (moodId: string) => {
+    setTier1(moodId);
+    setTier2(null);
+    setTier3(null);
+  };
+
+  useEffect(() => {
+    setTier2(null);
+    setTier3(null);
+  }, [tier1]);
 
   useEffect(() => {
     localStorage.setItem('daily_chat_history', JSON.stringify(chatHistory));
@@ -441,10 +453,7 @@ export function DailyChatView({ latestReport, onAnalyzeChat, isAnalyzing }: Dail
                       <button
                         key={mood.id}
                         id={`mood-tier1-${mood.id}`}
-                        onClick={() => {
-                          setTier1(mood.id);
-                          setTier2(null);
-                        }}
+                        onClick={() => handleSelectTier1(mood.id)}
                         className={`flex flex-col items-center justify-center p-4 rounded-2xl border transition-all duration-300 relative group overflow-hidden ${
                           isSelected 
                             ? mood.selectedClass 

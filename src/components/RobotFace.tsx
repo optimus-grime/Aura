@@ -49,33 +49,47 @@ export function RobotFace({
     }
   }, [isAiSpeaking, isUserSpeaking, isConnected]);
 
-  // Drifting expressions & looking around
+  // Drifting expressions & looking around with randomized delays
   useEffect(() => {
     if (!isConnected) return;
-    const expInterval = setInterval(() => {
-       const { isUserSpeaking: userSpk, isAiSpeaking: aiSpk, exaggerated: isExagg } = stateRef.current;
-       if (userSpk) {
-         if (Math.random() > 0.4) {
+    let timeoutId: NodeJS.Timeout;
+
+    const scheduleNextDrift = () => {
+      const { isUserSpeaking: userSpk, isAiSpeaking: aiSpk, exaggerated: isExagg } = stateRef.current;
+      
+      // Randomized delays: 800ms to 1800ms when speaking, 2000ms to 5500ms when idle
+      const delay = aiSpk
+        ? Math.floor(Math.random() * (1800 - 800 + 1)) + 800
+        : Math.floor(Math.random() * (5500 - 2000 + 1)) + 2000;
+
+      timeoutId = setTimeout(() => {
+        if (userSpk) {
+          if (Math.random() > 0.4) {
             const exps = ['neutral', 'squint', 'raised-brow', 'surprised'];
             setExpression(exps[Math.floor(Math.random() * exps.length)] as any);
             setLookDir(Math.random() > 0.6 ? (Math.random() > 0.5 ? 1 : -1) : 0);
-         }
-       } else if (aiSpk) {
-         if (Math.random() > (isExagg ? 0.3 : 0.6)) {
-           const exps = isExagg ? ['neutral', 'raised-brow', 'thinking', 'surprised', 'squint'] : ['neutral', 'raised-brow'];
-           setExpression(exps[Math.floor(Math.random() * exps.length)] as any);
-           setLookDir(Math.random() > 0.4 ? (Math.random() > 0.5 ? 1 : -1) : 0);
-         }
-       } else {
-         if (Math.random() > (isExagg ? 0.2 : 0.4)) {
-           const exps = isExagg ? ['neutral', 'thinking', 'raised-brow', 'squint'] : ['neutral', 'thinking'];
-           setExpression(exps[Math.floor(Math.random() * exps.length)] as any);
-           setLookDir(Math.random() > 0.4 ? (Math.random() > 0.5 ? 1 : -1) : 0);
-         }
-       }
-    }, exaggerated ? 1500 : 2800);
-    return () => clearInterval(expInterval);
-  }, [isConnected, exaggerated]);
+          }
+        } else if (aiSpk) {
+          if (Math.random() > (isExagg ? 0.3 : 0.6)) {
+            const exps = isExagg ? ['neutral', 'raised-brow', 'thinking', 'surprised', 'squint'] : ['neutral', 'raised-brow'];
+            setExpression(exps[Math.floor(Math.random() * exps.length)] as any);
+            setLookDir(Math.random() > 0.4 ? (Math.random() > 0.5 ? 1 : -1) : 0);
+          }
+        } else {
+          if (Math.random() > (isExagg ? 0.2 : 0.4)) {
+            const exps = isExagg ? ['neutral', 'thinking', 'raised-brow', 'squint'] : ['neutral', 'thinking'];
+            setExpression(exps[Math.floor(Math.random() * exps.length)] as any);
+            setLookDir(Math.random() > 0.4 ? (Math.random() > 0.5 ? 1 : -1) : 0);
+          }
+        }
+        scheduleNextDrift();
+      }, delay);
+    };
+
+    scheduleNextDrift();
+
+    return () => clearTimeout(timeoutId);
+  }, [isConnected]);
 
   // Blinking logic
   useEffect(() => {
@@ -99,7 +113,7 @@ export function RobotFace({
   let eyeColor = '#ffffff'; 
   let glowColor = '#cbd5e1'; // Soft warm-white/neutral default
 
-  // Structural bases
+  // Structural bases & Geometry variables
   let leftHeight = 60;
   let rightHeight = 60;
   let leftWidth = 32;
@@ -107,8 +121,12 @@ export function RobotFace({
   let leftY = 0;
   let rightY = 0;
   let xOffset = lookDir * 12;
-  let eyeScale = 1;
+  let eyeScale: number | number[] = 1;
   let lookY = 0;
+  let leftRadius = '9999px';
+  let rightRadius = '9999px';
+  let leftRotate = 0;
+  let rightRotate = 0;
 
   if (!isConnected) {
     leftHeight = rightHeight = 6;
@@ -124,7 +142,7 @@ export function RobotFace({
         break;
       case 'energetic':
         eyeColor = '#fffbeb'; // Pale gold tint
-        glowColor = '#f59e0b'; // Vibrant, hot gold/orange glow (Original preserved)
+        glowColor = '#f59e0b'; // Vibrant, hot gold/orange glow
         break;
       case 'anxious':
         eyeColor = '#f0f9ff'; // Pale electric blue tint
@@ -137,16 +155,19 @@ export function RobotFace({
         break;
     }
 
+    // Voice-driven pulse when speaking
     if (isAiSpeaking) {
-      eyeScale = 1.05;
+      eyeScale = [1, 1.1, 0.98, 1.05, 1];
     }
 
-    // Expressions
+    // Expressions & Dynamic Eye Geometry
     switch (expression) {
       case 'surprised': 
         leftHeight = rightHeight = exaggerated ? 100 : 84;
         leftWidth = rightWidth = exaggerated ? 60 : 46;
         leftY = rightY = -5;
+        leftRadius = rightRadius = '9999px';
+        leftRotate = rightRotate = 0;
         break;
       case 'raised-brow': 
         leftHeight = exaggerated ? 70 : 60;
@@ -155,15 +176,28 @@ export function RobotFace({
         rightHeight = exaggerated ? 95 : 78;
         rightWidth = exaggerated ? 48 : 38;
         rightY = exaggerated ? -15 : -12;
+        leftRadius = '9999px';
+        rightRadius = '9999px 9999px 12px 12px'; // High-arched right eye
+        leftRotate = -2;
+        rightRotate = 6;
         break;
       case 'squint': 
         leftHeight = rightHeight = exaggerated ? 15 : 24;
         leftWidth = rightWidth = exaggerated ? 50 : 40;
         leftY = rightY = exaggerated ? 8 : 5;
+        leftRadius = '12px 12px 9999px 9999px'; // Flat tops
+        rightRadius = '12px 12px 9999px 9999px'; // Flat tops
+        leftRotate = 4; // Inward tilt
+        rightRotate = -4; // Inward tilt
         break;
       case 'thinking': 
-        leftHeight = rightHeight = exaggerated ? 60 : 50;
-        leftWidth = rightWidth = exaggerated ? 40 : 30;
+        leftHeight = exaggerated ? 50 : 40; // Asymmetrical eye sizes
+        rightHeight = exaggerated ? 75 : 62;
+        leftWidth = exaggerated ? 32 : 26;
+        rightWidth = exaggerated ? 48 : 38;
+        leftRotate = -8; // Slight tilts
+        rightRotate = 5;
+        leftRadius = rightRadius = '9999px';
         xOffset = lookDir !== 0 ? lookDir * (exaggerated ? 25 : 20) : (exaggerated ? 20 : 15);
         lookY = -15; 
         break;
@@ -171,6 +205,8 @@ export function RobotFace({
       default:
         leftHeight = rightHeight = exaggerated ? 70 : 60;
         leftWidth = rightWidth = exaggerated ? 40 : 32;
+        leftRadius = rightRadius = '9999px';
+        leftRotate = rightRotate = 0;
         break;
     }
   }
@@ -178,6 +214,7 @@ export function RobotFace({
   // Blinking override
   if (isBlinking && isConnected) {
     leftHeight = rightHeight = 4;
+    leftRadius = rightRadius = '2px';
   }
 
   // Define dynamic gradients and colors for perfect chromatic harmony
@@ -285,29 +322,59 @@ export function RobotFace({
         {/* Eye Container (Layer 5 - Floating on top) */}
         <div className="w-full h-full flex items-center justify-center relative z-20">
           <motion.div
-              animate={{ x: xOffset, y: lookY }}
-              transition={{ type: "spring", stiffness: 120, damping: 20 }}
+            animate={{ x: xOffset, y: lookY }}
+            transition={{ type: "spring", stiffness: 120, damping: 20 }}
             className="flex items-center justify-center space-x-10"
           >
             {/* Left Eye */}
             <motion.div
-                animate={{ height: leftHeight, width: leftWidth, y: leftY, scale: eyeScale }}
-                transition={{ type: "spring", stiffness: 350, damping: 25 }}
-               className="rounded-full shadow-lg transition-colors duration-300"
-               style={{
-                  backgroundColor: eyeColor,
-                 boxShadow: `0 0 25px ${glowColor}, 0 0 50px ${glowColor}, inset 0 0 8px #ffffff`
-               }}
+              animate={{ 
+                height: leftHeight, 
+                width: leftWidth, 
+                y: leftY, 
+                scale: eyeScale,
+                borderRadius: leftRadius,
+                rotate: leftRotate
+              }}
+              transition={{ 
+                type: isAiSpeaking ? "keyframes" : "spring", 
+                stiffness: 350, 
+                damping: 25,
+                duration: isAiSpeaking ? 0.8 : 0.25,
+                repeat: isAiSpeaking ? Infinity : 0,
+                repeatType: "loop",
+                ease: "easeInOut"
+              }}
+              className="shadow-lg transition-colors duration-300"
+              style={{
+                backgroundColor: eyeColor,
+                boxShadow: `0 0 25px ${glowColor}, 0 0 50px ${glowColor}, inset 0 0 8px #ffffff`
+              }}
             />
             {/* Right Eye */}
             <motion.div
-                animate={{ height: rightHeight, width: rightWidth, y: rightY, scale: eyeScale }}
-                transition={{ type: "spring", stiffness: 350, damping: 25 }}
-               className="rounded-full shadow-lg transition-colors duration-300"
-               style={{
-                  backgroundColor: eyeColor,
-                 boxShadow: `0 0 25px ${glowColor}, 0 0 50px ${glowColor}, inset 0 0 8px #ffffff`
-               }}
+              animate={{ 
+                height: rightHeight, 
+                width: rightWidth, 
+                y: rightY, 
+                scale: eyeScale,
+                borderRadius: rightRadius,
+                rotate: rightRotate
+              }}
+              transition={{ 
+                type: isAiSpeaking ? "keyframes" : "spring", 
+                stiffness: 350, 
+                damping: 25,
+                duration: isAiSpeaking ? 0.8 : 0.25,
+                repeat: isAiSpeaking ? Infinity : 0,
+                repeatType: "loop",
+                ease: "easeInOut"
+              }}
+              className="shadow-lg transition-colors duration-300"
+              style={{
+                backgroundColor: eyeColor,
+                boxShadow: `0 0 25px ${glowColor}, 0 0 50px ${glowColor}, inset 0 0 8px #ffffff`
+              }}
             />
           </motion.div>
         </div>
