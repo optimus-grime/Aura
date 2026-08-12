@@ -345,6 +345,54 @@ ${subjectInstruction} Produce a comprehensive, synthesis profile mimicking a psy
     }
   });
 
+  app.post('/api/lunar-intentions', async (req, res) => {
+    try {
+      const { moonPhase, moodScore, recentSentiment } = req.body;
+      if (!moonPhase) {
+        return res.status(400).json({ error: 'Moon phase is required' });
+      }
+
+      const response = await withRetry(() => getGenAI().models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: JSON.stringify({ moonPhase, moodScore, recentSentiment }),
+        config: {
+          systemInstruction: `You are a reflective counselor and symbolic analyst for the Aura application. Your task is to construct a daily reflection payload by synthesizing two distinct input vectors:
+1. Passive Symbolic Data: The current Moon Phase (e.g., New Moon, Waxing Gibbous, Full Moon, Waning Crescent).
+2. Active Psychological Data (Optional): The user's recent psychological readiness score (0–100) and sentiment summary.
+
+SYNTHESIS INSTRUCTIONS:
+- Analyze Moon Phase archetype (e.g., New Moon = initiation/rest; Waxing = growth/building; Full Moon = fruition/intensity; Waning = release/reflection).
+- Evaluate readiness score (if provided):
+  * Low (0–40): Emphasize pacing, boundaries, emotional rest, and reduced external expectations.
+  * Moderate (41–70): Emphasize steady balance, mindful observation, and incremental progress.
+  * High (71–100): Emphasize action, creative expression, clarity, and bold expansion.
+- Intersect the two vectors into a unified daily lens without sounding mystical, pseudo-psychic, or superstitious. Keep tone grounded, empathetic, and analytical.
+
+Return JSON matching the schema:
+{
+  "theme": "A concise 1-sentence focal theme combining the lunar energy with the user's current state.",
+  "journalPrompt": "A single, thought-provoking reflective question to help the user process their current state."
+}`,
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              theme: { type: Type.STRING, description: 'A concise 1-sentence focal theme combining the lunar energy with the user\'s current readiness state.' },
+              journalPrompt: { type: Type.STRING, description: 'A single, thought-provoking reflective question to help the user process their current state.' }
+            },
+            required: ["theme", "journalPrompt"]
+          }
+        },
+      }));
+
+      const result = JSON.parse(response.text || '{}');
+      res.json(result);
+    } catch (e: any) {
+      console.error('Error generating lunar intentions:', e);
+      res.status(500).json({ error: formatApiError(e) });
+    }
+  });
+
   app.post('/api/analyze-text', async (req, res) => {
     try {
       const { text, analyzePartner } = req.body;

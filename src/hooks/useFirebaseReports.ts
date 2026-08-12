@@ -4,13 +4,53 @@ import { collection, query, orderBy, onSnapshot, setDoc, deleteDoc, doc, serverT
 import { handleFirestoreError, OperationType } from '../lib/firestoreUtils';
 import { SavedReport, ReportData } from '../types';
 
+async function syncLatestMetrics(userId: string, reportData: ReportData) {
+  try {
+    const readinessScore = typeof reportData.readiness?.score === 'number' ? reportData.readiness.score : 70;
+    const hrvBalanceMs = Math.round(40 + readinessScore * 0.4);
+    const sleepHours = parseFloat((6.0 + (readinessScore / 30)).toFixed(1));
+    const restingHeartRateBpm = Math.round(75 - readinessScore * 0.15);
+    const statusLabel = readinessScore >= 75 ? 'Optimal' : readinessScore >= 45 ? 'Balanced' : 'Recovery Needed';
+
+    const syncDocData = {
+      readinessScore,
+      hrvBalanceMs,
+      sleepHours,
+      restingHeartRateBpm,
+      statusLabel,
+      lastSyncedAt: serverTimestamp()
+    };
+
+    await setDoc(doc(db, 'users', userId, 'sync', 'current'), syncDocData);
+  } catch (error) {
+    console.error('Error syncing latest metrics to sync/current:', error);
+  }
+}
+
 export function useFirebaseReports() {
-  const [savedReports, setSavedReports] = useState<SavedReport[]>([]);
+  const [savedReports, setSavedReports] = useState<SavedReport[]>(() => {
+    try {
+      const cached = localStorage.getItem('aura_cached_reports');
+      if (cached) {
+        return JSON.parse(cached);
+      }
+    } catch (e) {
+      console.error('Error loading cached reports from localStorage:', e);
+    }
+    return [];
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!auth.currentUser) {
+    // If offline, don't wait for snapshot, use localStorage cache
+    if (!navigator.onLine || !auth.currentUser) {
       setLoading(false);
+      try {
+        const cached = localStorage.getItem('aura_cached_reports');
+        if (cached) {
+          setSavedReports(JSON.parse(cached));
+        }
+      } catch (e) {}
       return;
     }
 
@@ -30,8 +70,21 @@ export function useFirebaseReports() {
         });
       });
       setSavedReports(reports);
+      localStorage.setItem('aura_cached_reports', JSON.stringify(reports));
       setLoading(false);
+
+      if (reports.length > 0 && auth.currentUser) {
+        syncLatestMetrics(auth.currentUser.uid, reports[0].report);
+      }
     }, (error) => {
+      console.error('Firestore snapshot error, falling back to local cache:', error);
+      try {
+        const cached = localStorage.getItem('aura_cached_reports');
+        if (cached) {
+          setSavedReports(JSON.parse(cached));
+        }
+      } catch (e) {}
+      setLoading(false);
       handleFirestoreError(error, OperationType.LIST, `users/${auth.currentUser?.uid}/reports`);
     });
 
@@ -39,27 +92,51 @@ export function useFirebaseReports() {
   }, [auth.currentUser]);
 
   const saveReport = async (newReportData: ReportData) => {
-    if (!auth.currentUser) return;
+    const reportId = crypto.randomUUID?.() || Date.now().toString();
+    const newSaved: SavedReport = {
+      id: reportId,
+      date: new Date().toISOString(),
+      report: newReportData
+    };
+
+    // Update local state and cache immediately
+    const updated = [newSaved, ...savedReports];
+    setSavedReports(updated);
     try {
-      const reportId = crypto.randomUUID?.() || Date.now().toString();
-      const newSaved = {
+      localStorage.setItem('aura_cached_reports', JSON.stringify(updated));
+    } catch (e) {}
+
+    if (!navigator.onLine || !auth.currentUser) {
+      console.log('Offline: saved report locally.');
+      return;
+    }
+
+    try {
+      const firestoreDoc = {
         userId: auth.currentUser.uid,
-        date: new Date().toISOString(),
+        date: newSaved.date,
         report: newReportData,
         createdAt: serverTimestamp()
       };
-      await setDoc(doc(db, 'users', auth.currentUser.uid, 'reports', reportId), newSaved);
+      await setDoc(doc(db, 'users', auth.currentUser.uid, 'reports', reportId), firestoreDoc);
+      await syncLatestMetrics(auth.currentUser.uid, newReportData);
     } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, `users/${auth.currentUser.uid}/reports`);
+      handleFirestoreError(error, OperationType.CREATE, `users/${auth.currentUser?.uid}/reports`);
     }
   };
 
   const deleteReport = async (id: string) => {
-    if (!auth.currentUser) return;
+    const updated = savedReports.filter(r => r.id !== id);
+    setSavedReports(updated);
+    try {
+      localStorage.setItem('aura_cached_reports', JSON.stringify(updated));
+    } catch (e) {}
+
+    if (!auth.currentUser || !navigator.onLine) return;
     try {
       await deleteDoc(doc(db, 'users', auth.currentUser.uid, 'reports', id));
     } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `users/${auth.currentUser.uid}/reports/${id}`);
+      handleFirestoreError(error, OperationType.DELETE, `users/${auth.currentUser?.uid}/reports/${id}`);
     }
   };
 

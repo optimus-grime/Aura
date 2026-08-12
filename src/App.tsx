@@ -16,6 +16,7 @@ import { SavedReport, ReportData } from './types';
 import { auth } from './firebase';
 import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'firebase/auth';
 import { useFirebaseReports } from './hooks/useFirebaseReports';
+import { useOnlineStatus } from './hooks/useOnlineStatus';
 
 // Add to imports in App.tsx
 import { LayeredInsightsView } from './components/LayeredInsightsView';
@@ -23,6 +24,19 @@ import { PersonalityArchiveView } from './components/PersonalityArchiveView';
 import { ShareAppSection } from './components/ShareAppSection';
 
 export default function App() {
+  const APP_VERSION = '1.1.0';
+
+  useEffect(() => {
+    const currentVersion = localStorage.getItem('app_version');
+    if (currentVersion && currentVersion !== APP_VERSION) {
+      localStorage.setItem('app_version', APP_VERSION);
+      window.location.reload();
+    } else if (!currentVersion) {
+      localStorage.setItem('app_version', APP_VERSION);
+    }
+  }, []);
+
+  const isOnline = useOnlineStatus();
   const { isConnected, isError, isSpeaking, userIsSpeaking, report, connect, disconnect } = useLiveAudio();
   const [showReport, setShowReport] = useState(false);
   const [appReport, setAppReport] = useState<any>(null);
@@ -512,6 +526,13 @@ export default function App() {
                     </p>
                   </div>
                 </div>
+
+                {!isOnline && (
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 text-xs font-semibold shadow-sm animate-pulse">
+                    <span className="w-2 h-2 rounded-full bg-amber-500" />
+                    <span>Offline Mode</span>
+                  </div>
+                )}
               </div>
 
               {/* View Components */}
@@ -560,6 +581,8 @@ export default function App() {
                   </div>
                 </motion.div>
               )}
+
+
 
               {activeTab === 'layered' && (
                 <LayeredInsightsView reports={savedReports} saveReport={saveReport} />

@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { SavedReport } from '../types';
+
+
 import {
   Calendar as CalendarIcon,
   ChevronLeft,
@@ -463,12 +465,14 @@ export const MoodCalendarView: React.FC<MoodCalendarViewProps> = ({ reports, onV
                     {dayItem.dayNumber}
                   </span>
 
-                  {hasReports && (
-                    <span
-                      className={`w-2 h-2 rounded-full ${moodCategory.config.dotColor} shadow-sm`}
-                      title={`${dayItem.reports.length} report(s)`}
-                    />
-                  )}
+                  <div className="flex items-center space-x-1">
+                    {hasReports && (
+                      <span
+                        className={`w-2 h-2 rounded-full ${moodCategory.config.dotColor} shadow-sm`}
+                        title={`${dayItem.reports.length} report(s)`}
+                      />
+                    )}
+                  </div>
                 </div>
 
                 {/* Bottom row: score or mood pill */}

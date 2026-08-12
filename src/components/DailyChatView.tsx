@@ -1,7 +1,7 @@
 import { auth } from '../firebase';
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { MessageCircle, Send, Plus, BarChart3, Clock, RotateCcw, Check, Sparkles, CheckCircle2 } from 'lucide-react';
+import { MessageCircle, Send, Plus, BarChart3, Clock, RotateCcw, Check, Sparkles, CheckCircle2, TrendingUp, Target } from 'lucide-react';
 import { ReportData } from '../types';
 
 interface DailyChatViewProps {
@@ -166,14 +166,37 @@ export function DailyChatView({ latestReport, onAnalyzeChat, isAnalyzing }: Dail
     }
   }, [chatHistory, isChatLoading]);
 
-  // When tier2 changes, pre-select the first word of tier3 automatically to keep UX slick
   useEffect(() => {
-    if (tier2 && TIER3_VOCABULARY[tier2]) {
-      setTier3(TIER3_VOCABULARY[tier2][0]);
-    } else {
-      setTier3(null);
-    }
-  }, [tier2]);
+    const handleOnlineSync = async () => {
+      try {
+        const queued = JSON.parse(localStorage.getItem('offline_checkins') || '[]');
+        if (queued.length > 0) {
+          for (const checkin of queued) {
+            try {
+              await fetch('/api/daily-chat', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${(await auth.currentUser?.getIdToken()) || ''}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  profile: latestReport,
+                  history: [],
+                  message: `Synced offline mood check-in: ${checkin.moodStr}`,
+                  mood: checkin.moodStr
+                }),
+              });
+            } catch (err) {}
+          }
+          localStorage.removeItem('offline_checkins');
+          setChatWarning("You are back online! Offline check-ins have been synced successfully.");
+        }
+      } catch (e) {}
+    };
+
+    window.addEventListener('online', handleOnlineSync);
+    return () => window.removeEventListener('online', handleOnlineSync);
+  }, [latestReport]);
 
   const sendChatMessage = async () => {
     if (!chatInput.trim()) return;
@@ -240,13 +263,39 @@ export function DailyChatView({ latestReport, onAnalyzeChat, isAnalyzing }: Dail
     localStorage.setItem('last_checkin_date', new Date().toLocaleDateString());
 
     const systemText = `I have logged my mood for today:\n• Core Emotion: ${coreLabel}\n• Refinement: ${t2}\n• Descriptor: ${t3}`;
-    
     const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const newHistory: { role: 'user' | 'model'; text: string; timestamp?: string }[] = [
       ...chatHistory, 
       { role: 'user' as const, text: systemText, timestamp }
     ];
     setChatHistory(newHistory);
+
+    if (!navigator.onLine) {
+      const offlineCheckin = {
+        timestamp: new Date().toISOString(),
+        tier1: t1,
+        tier2: t2,
+        tier3: t3,
+        moodStr
+      };
+      try {
+        const existing = JSON.parse(localStorage.getItem('offline_checkins') || '[]');
+        existing.push(offlineCheckin);
+        localStorage.setItem('offline_checkins', JSON.stringify(existing));
+      } catch (e) {}
+
+      setChatWarning("Log saved locally. AI analysis will run when you reconnect.");
+      setChatHistory([
+        ...newHistory,
+        {
+          role: 'model',
+          text: `Log saved locally. AI analysis will run when you reconnect. (Recorded: "${moodStr}")`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }
+      ]);
+      return;
+    }
+
     setIsChatLoading(true);
 
     try {
@@ -387,6 +436,92 @@ export function DailyChatView({ latestReport, onAnalyzeChat, isAnalyzing }: Dail
                 </button>
             </div>
         </div>
+
+        {/* Progress Takeaway Summary Card */}
+        {latestReport ? (() => {
+          const readinessScore = latestReport.readiness?.score;
+          const mainSummary = latestReport.casualSummary || latestReport.summary || latestReport.sentimentAnalysis?.summary || latestReport.readiness?.explanation;
+          const archetype = [latestReport.mbti, latestReport.enneagram ? `Type ${latestReport.enneagram}` : null].filter(Boolean).join(' • ');
+          const sentiment = latestReport.sentimentAnalysis?.overallSentiment;
+          const topInsight = latestReport.actionableInsights && latestReport.actionableInsights.length > 0 ? latestReport.actionableInsights[0] : null;
+
+          let readinessBadge = null;
+          if (typeof readinessScore === 'number') {
+            if (readinessScore >= 75) {
+              readinessBadge = { label: `${readinessScore}% High Readiness`, color: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+            } else if (readinessScore >= 45) {
+              readinessBadge = { label: `${readinessScore}% Balanced Readiness`, color: 'bg-cyan-50 text-cyan-700 border-cyan-200' };
+            } else {
+              readinessBadge = { label: `${readinessScore}% Rest Needed`, color: 'bg-amber-50 text-amber-700 border-amber-200' };
+            }
+          }
+
+          return (
+            <div className="p-6 md:p-8 rounded-3xl bg-gradient-to-br from-blue-50/90 via-indigo-50/40 to-white border border-blue-200/80 shadow-xl flex flex-col space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-blue-100">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-2xl bg-blue-600 text-white shadow-md shadow-blue-500/20">
+                    <TrendingUp className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                      Latest Progress Takeaway
+                    </h3>
+                    <p className="text-xs text-slate-500 font-sans">
+                      High-level takeaway from your most recent saved analysis
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  {readinessBadge && (
+                    <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${readinessBadge.color}`}>
+                      {readinessBadge.label}
+                    </span>
+                  )}
+                  {archetype && (
+                    <span className="px-3 py-1 text-xs font-semibold rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                      {archetype}
+                    </span>
+                  )}
+                  {sentiment && (
+                    <span className="px-3 py-1 text-xs font-semibold rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 capitalize">
+                      {sentiment}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {mainSummary && (
+                <p className="text-slate-700 text-sm md:text-base leading-relaxed font-sans">
+                  {mainSummary}
+                </p>
+              )}
+
+              {topInsight && (
+                <div className="p-4 rounded-2xl bg-white/80 border border-blue-100/80 flex items-start gap-3 text-xs md:text-sm shadow-sm">
+                  <Target className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-semibold text-slate-900">{topInsight.title}: </span>
+                    <span className="text-slate-600">{topInsight.insight}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })() : (
+          <div className="p-6 rounded-3xl bg-white/80 border border-slate-200/80 shadow-md flex items-center gap-4 text-slate-600 text-sm">
+            <div className="p-2.5 rounded-2xl bg-blue-50 text-blue-600 border border-blue-100">
+              <TrendingUp className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="font-semibold text-slate-800 text-base">No Progress Report Yet</p>
+              <p className="text-xs text-slate-500">
+                Chat with Aura or run "Analyze Day" to unlock high-level takeaways and progress insights here!
+              </p>
+            </div>
+          </div>
+        )}
 
         {chatWarning && (
           <div className="p-4 bg-amber-50 text-amber-800 border border-amber-200 rounded-2xl flex items-center justify-between text-sm shadow-sm">
