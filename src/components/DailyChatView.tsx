@@ -8,7 +8,20 @@ interface DailyChatViewProps {
   latestReport: ReportData | null;
   onAnalyzeChat: (text: string, onSuccess: () => void) => void;
   isAnalyzing: boolean;
+  onSaveReport?: (reportData: ReportData, customDate?: string, logDate?: string) => void;
 }
+
+function toLocalDateKey(dateObj: Date): string {
+  const year = dateObj.getFullYear();
+  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const day = String(dateObj.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+const todayKey = toLocalDateKey(new Date());
+const yesterdayKey = toLocalDateKey(new Date(Date.now() - 86400000));
+const twoDaysAgoKey = toLocalDateKey(new Date(Date.now() - 2 * 86400000));
+const threeDaysAgoKey = toLocalDateKey(new Date(Date.now() - 3 * 86400000));
 
 const TIER1_MOODS = [
   { 
@@ -97,7 +110,7 @@ const CONTAINER_AMBIENT_STYLES: Record<string, { bg: string; border: string; sha
   }
 };
 
-export function DailyChatView({ latestReport, onAnalyzeChat, isAnalyzing }: DailyChatViewProps) {
+export function DailyChatView({ latestReport, onAnalyzeChat, isAnalyzing, onSaveReport }: DailyChatViewProps) {
   const [chatHistory, setChatHistory] = useState<{ role: 'user' | 'model'; text: string; timestamp?: string }[]>(() => {
     const saved = localStorage.getItem('daily_chat_history');
     const lastCheckinDate = localStorage.getItem('last_checkin_date');
@@ -129,6 +142,25 @@ export function DailyChatView({ latestReport, onAnalyzeChat, isAnalyzing }: Dail
     if (lastCheckinDate && lastCheckinDate !== today) return null;
     return localStorage.getItem('daily_chat_mood') || null;
   });
+
+  const [targetDateKey, setTargetDateKey] = useState<string>(todayKey);
+  const [checkinsByDate, setCheckinsByDate] = useState<Record<string, { moodStr: string; tier1: string; tier2: string; tier3: string; timestamp: string }>>(() => {
+    try {
+      const saved = localStorage.getItem('aura_mood_checkins_by_date');
+      if (saved) return JSON.parse(saved);
+      const oldMood = localStorage.getItem('daily_chat_mood');
+      if (oldMood) {
+        return { [todayKey]: { moodStr: oldMood, tier1: 'happy', tier2: '', tier3: '', timestamp: new Date().toISOString() } };
+      }
+    } catch (e) {}
+    return {};
+  });
+
+  useEffect(() => {
+    localStorage.setItem('aura_mood_checkins_by_date', JSON.stringify(checkinsByDate));
+  }, [checkinsByDate]);
+
+  const currentDayCheckin = checkinsByDate[targetDateKey] || null;
 
   // Mood selector dynamic state
   const [tier1, setTier1] = useState<string | null>(null);
@@ -259,11 +291,47 @@ export function DailyChatView({ latestReport, onAnalyzeChat, isAnalyzing }: Dail
     const coreLabel = TIER1_MOODS.find(m => m.id === t1)?.label || t1;
     const moodStr = `${coreLabel} - ${t2} (${t3})`;
     
-    setSelectedMood(moodStr);
-    localStorage.setItem('last_checkin_date', new Date().toLocaleDateString());
+    const targetDateObj = new Date(targetDateKey + 'T12:00:00');
+    const timestampStr = targetDateObj.toISOString();
 
-    const systemText = `I have logged my mood for today:\n• Core Emotion: ${coreLabel}\n• Refinement: ${t2}\n• Descriptor: ${t3}`;
-    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const updatedCheckins = {
+      ...checkinsByDate,
+      [targetDateKey]: {
+        moodStr,
+        tier1: t1,
+        tier2: t2,
+        tier3: t3,
+        timestamp: timestampStr
+      }
+    };
+    setCheckinsByDate(updatedCheckins);
+
+    if (targetDateKey === todayKey) {
+      setSelectedMood(moodStr);
+      localStorage.setItem('last_checkin_date', new Date().toLocaleDateString());
+    }
+
+    if (onSaveReport) {
+      const moodReport: ReportData = {
+        casualSummary: moodStr,
+        summary: `Mood check-in for ${targetDateKey}: ${moodStr}`,
+        readiness: {
+          score: t1 === 'happy' ? 85 : t1 === 'relaxed' ? 70 : t1 === 'anxious' ? 45 : t1 === 'sad' ? 35 : 25,
+          explanation: `Core emotion: ${coreLabel}, Refinement: ${t2}, Descriptor: ${t3}`,
+          correlation: 'Mood logged via Interactive Mood Mapping'
+        },
+        sentimentAnalysis: {
+          overallSentiment: coreLabel,
+          shifts: [t2, t3],
+          summary: `Check-in logged for ${targetDateKey}: ${moodStr}`
+        }
+      };
+      onSaveReport(moodReport, timestampStr, targetDateKey);
+    }
+
+    const dateDisplayName = targetDateKey === todayKey ? 'today' : targetDateKey === yesterdayKey ? 'yesterday' : targetDateKey;
+    const systemText = `I have logged my mood for ${dateDisplayName}:\n• Core Emotion: ${coreLabel}\n• Refinement: ${t2}\n• Descriptor: ${t3}`;
+    const timestamp = targetDateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const newHistory: { role: 'user' | 'model'; text: string; timestamp?: string }[] = [
       ...chatHistory, 
       { role: 'user' as const, text: systemText, timestamp }
@@ -546,7 +614,68 @@ export function DailyChatView({ latestReport, onAnalyzeChat, isAnalyzing }: Dail
             </p>
           </div>
 
-          {selectedMood ? (
+          {/* Missed Day Indicator Banner */}
+          {!checkinsByDate[yesterdayKey] && (
+            <div className="p-4 bg-amber-50/90 border border-amber-200 rounded-2xl flex items-center justify-between text-xs md:text-sm shadow-sm backdrop-blur-sm">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-amber-100 text-amber-700">
+                  <Clock className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="font-bold text-amber-900">Missed yesterday's reflection?</span>
+                  <p className="text-amber-700">Quickly catch up and log yesterday's mood to keep your trends complete.</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setTargetDateKey(yesterdayKey);
+                  setTier1(null);
+                  setTier2(null);
+                  setTier3(null);
+                }}
+                className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm shrink-0"
+              >
+                Log Yesterday
+              </button>
+            </div>
+          )}
+
+          {/* Target Date Selector */}
+          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider font-mono">Target Date</span>
+            <div className="flex items-center gap-1 bg-slate-100/80 p-1 rounded-xl">
+              {[
+                { key: todayKey, label: 'Today' },
+                { key: yesterdayKey, label: 'Yesterday' },
+                { key: twoDaysAgoKey, label: '2 Days Ago' },
+                { key: threeDaysAgoKey, label: '3 Days Ago' }
+              ].map(d => {
+                const isSelected = targetDateKey === d.key;
+                const hasLogged = !!checkinsByDate[d.key];
+                return (
+                  <button
+                    key={d.key}
+                    onClick={() => {
+                      setTargetDateKey(d.key);
+                      setTier1(null);
+                      setTier2(null);
+                      setTier3(null);
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                      isSelected
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                    }`}
+                  >
+                    <span>{d.label}</span>
+                    {hasLogged && <span className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-emerald-300' : 'bg-emerald-500'}`} />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {currentDayCheckin ? (
             /* Logged State Summary Card */
             <motion.div 
               initial={{ opacity: 0, scale: 0.95 }}
@@ -558,13 +687,18 @@ export function DailyChatView({ latestReport, onAnalyzeChat, isAnalyzing }: Dail
                   <CheckCircle2 className="w-6 h-6" />
                 </div>
                 <div>
-                  <p className="text-xs text-blue-600 font-bold uppercase tracking-wider font-mono">Today's Mood Logged</p>
-                  <p className="text-base font-bold text-slate-900 mt-0.5">{selectedMood}</p>
+                  <p className="text-xs text-blue-600 font-bold uppercase tracking-wider font-mono">
+                    {targetDateKey === todayKey ? "Today's" : targetDateKey === yesterdayKey ? "Yesterday's" : targetDateKey} Mood Logged
+                  </p>
+                  <p className="text-base font-bold text-slate-900 mt-0.5">{currentDayCheckin.moodStr}</p>
                 </div>
               </div>
               <button
                 onClick={() => {
-                  setSelectedMood(null);
+                  const copy = { ...checkinsByDate };
+                  delete copy[targetDateKey];
+                  setCheckinsByDate(copy);
+                  if (targetDateKey === todayKey) setSelectedMood(null);
                   setTier1(null);
                   setTier2(null);
                   setTier3(null);

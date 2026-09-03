@@ -22,8 +22,13 @@ export function AnalysisReport({ report, onClose, autoDownload, onDownloadComple
   }]);
   const [isSending, setIsSending] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const reportRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (autoDownload && !isDownloadingPdf && reportRef.current) {
@@ -301,14 +306,16 @@ export function AnalysisReport({ report, onClose, autoDownload, onDownloadComple
             <h3 className="text-base font-semibold text-slate-500 mb-4 uppercase tracking-wider">Big Five (OCEAN) traits</h3>
             
             <div className="h-[250px] sm:h-[300px] w-full mb-6">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
-                    <PolarGrid stroke="#e2e8f0" />
-                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#475569', fontSize: 13 }} />
-                    <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: '#94a3b8', fontSize: 10 }} />
-                    <Radar name="User" dataKey="A" stroke="#2563eb" fill="#3b82f6" fillOpacity={0.4} />
-                  </RadarChart>
-                </ResponsiveContainer>
+                {mounted && (
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                    <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
+                      <PolarGrid stroke="#e2e8f0" />
+                      <PolarAngleAxis dataKey="subject" tick={{ fill: '#475569', fontSize: 13 }} />
+                      <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: '#94a3b8', fontSize: 10 }} />
+                      <Radar name="User" dataKey="A" stroke="#2563eb" fill="#3b82f6" fillOpacity={0.4} />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                )}
             </div>
 
             <div className="space-y-8">

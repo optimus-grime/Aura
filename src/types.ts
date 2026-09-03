@@ -55,6 +55,7 @@ export interface ReportData {
 export interface SavedReport {
   id: string;
   date: string;
+  logDate?: string; // YYYY-MM-DD
   report: ReportData;
 }
 

@@ -140,12 +140,11 @@ export const MoodCalendarView: React.FC<MoodCalendarViewProps> = ({ reports, onV
   const [selectedMonthDate, setSelectedMonthDate] = useState<Date>(() => new Date(today.getFullYear(), today.getMonth(), 1));
   const [selectedDateKey, setSelectedDateKey] = useState<string | null>(() => toLocalDateKey(today));
 
-  // Map reports by local YYYY-MM-DD key
+  // Map reports by local YYYY-MM-DD key using logDate or report date
   const reportsByDateKey = useMemo(() => {
     const map: Record<string, SavedReport[]> = {};
     reports.forEach((rp) => {
-      const d = parseReportDate(rp.date);
-      const key = toLocalDateKey(d);
+      const key = rp.logDate || toLocalDateKey(parseReportDate(rp.date));
       if (!map[key]) map[key] = [];
       map[key].push(rp);
     });

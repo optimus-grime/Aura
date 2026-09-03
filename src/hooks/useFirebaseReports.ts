@@ -66,6 +66,7 @@ export function useFirebaseReports() {
         reports.push({
           id: docSnap.id,
           date: data.date,
+          logDate: data.logDate || data.date?.split('T')[0],
           report: data.report
         });
       });
@@ -91,11 +92,13 @@ export function useFirebaseReports() {
     return () => unsubscribe();
   }, [auth.currentUser]);
 
-  const saveReport = async (newReportData: ReportData) => {
+  const saveReport = async (newReportData: ReportData, customDate?: string, logDate?: string) => {
     const reportId = crypto.randomUUID?.() || Date.now().toString();
+    const resolvedLogDate = logDate || (customDate ? customDate.split('T')[0] : new Date().toISOString().split('T')[0]);
     const newSaved: SavedReport = {
       id: reportId,
-      date: new Date().toISOString(),
+      date: customDate || new Date().toISOString(),
+      logDate: resolvedLogDate,
       report: newReportData
     };
 
@@ -115,6 +118,7 @@ export function useFirebaseReports() {
       const firestoreDoc = {
         userId: auth.currentUser.uid,
         date: newSaved.date,
+        logDate: resolvedLogDate,
         report: newReportData,
         createdAt: serverTimestamp()
       };

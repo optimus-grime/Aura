@@ -20,7 +20,9 @@ export default defineConfig(() => {
         },
         workbox: {
           maximumFileSizeToCacheInBytes: 5000000,
-          globPatterns: ['**/*.{js,css,html,ico,png,svg}']
+          globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+          navigateFallback: 'index.html',
+          navigateFallbackDenylist: [/^\/api/]
         },
         manifest: {
           name: 'Aura',

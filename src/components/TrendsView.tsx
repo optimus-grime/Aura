@@ -1,5 +1,5 @@
 import { auth } from '../firebase';
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { SavedReport } from '../types';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts';
@@ -121,6 +121,11 @@ export function TrendsView({ reports, onViewReport, onDeleteReport, initialViewM
   const [compareError, setCompareError] = useState<string | null>(null);
 
   const trendsRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   
   const toggleTrait = (trait: string) => {
     setSelectedTraits(prev => 
@@ -163,17 +168,26 @@ export function TrendsView({ reports, onViewReport, onDeleteReport, initialViewM
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-  const chronologicalReports = [...reports].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  const recentReports = chronologicalReports.filter(rp => new Date(rp.date) >= thirtyDaysAgo);
+  const chronologicalReports = [...reports].sort((a, b) => {
+    const dateA = a.logDate || a.date.split('T')[0];
+    const dateB = b.logDate || b.date.split('T')[0];
+    return dateA.localeCompare(dateB);
+  });
+  const recentReports = chronologicalReports.filter(rp => {
+    const checkDate = new Date(rp.logDate || rp.date);
+    return checkDate >= thirtyDaysAgo;
+  });
   const dataReports = recentReports.length > 0 ? recentReports : chronologicalReports;
   
   const chartData = dataReports.map(rp => {
     const dateObj = new Date(rp.date);
-    const shortDate = `${String(dateObj.getMonth() + 1).padStart(2, '0')}/${String(dateObj.getDate()).padStart(2, '0')}`;
+    const displayDateStr = rp.logDate ? `${rp.logDate}T12:00:00` : rp.date;
+    const displayDateObj = new Date(displayDateStr);
+    const shortDate = `${String(displayDateObj.getMonth() + 1).padStart(2, '0')}/${String(displayDateObj.getDate()).padStart(2, '0')}`;
     const readinessScore = rp.report.readiness?.score || 70;
     const hrvBalanceMs = (rp.report as any).hrvBalanceMs || Math.round(40 + readinessScore * 0.4);
     return {
-      date: dateObj.toLocaleDateString(),
+      date: displayDateObj.toLocaleDateString(),
       shortDate,
       time: dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       readinessScore,
@@ -335,43 +349,45 @@ export function TrendsView({ reports, onViewReport, onDeleteReport, initialViewM
                 </div>
                 
                 <div className="h-24 w-full mt-3">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart 
-                      data={chartData} 
-                      margin={{ top: 5, right: 10, left: -32, bottom: 5 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                      <XAxis 
-                        dataKey="shortDate" 
-                        stroke="#94a3b8" 
-                        fontSize={10} 
-                        tickLine={false} 
-                        axisLine={false}
-                        interval="preserveStartEnd"
-                      />
-                      <YAxis 
-                        stroke="#94a3b8" 
-                        fontSize={10} 
-                        tickLine={false} 
-                        axisLine={false} 
-                        domain={[0, 100]}
-                        ticks={[0, 50, 100]}
-                      />
-                      <Tooltip 
-                        content={<SmallMultipleTooltip traitName={trait.name} traitColor={trait.color} />}
-                        cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }}
-                        wrapperStyle={{ zIndex: 100 }}
-                      />
-                      <Line 
-                        type="monotone" 
-                        dataKey={trait.id} 
-                        stroke={trait.color} 
-                        strokeWidth={2} 
-                        dot={false}
-                        activeDot={{ r: 4, strokeWidth: 0 }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
+                  {mounted && (
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                      <LineChart 
+                        data={chartData} 
+                        margin={{ top: 5, right: 10, left: -32, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                        <XAxis 
+                          dataKey="shortDate" 
+                          stroke="#94a3b8" 
+                          fontSize={10} 
+                          tickLine={false} 
+                          axisLine={false}
+                          interval="preserveStartEnd"
+                        />
+                        <YAxis 
+                          stroke="#94a3b8" 
+                          fontSize={10} 
+                          tickLine={false} 
+                          axisLine={false} 
+                          domain={[0, 100]}
+                          ticks={[0, 50, 100]}
+                        />
+                        <Tooltip 
+                          content={<SmallMultipleTooltip traitName={trait.name} traitColor={trait.color} />}
+                          cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }}
+                          wrapperStyle={{ zIndex: 100 }}
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey={trait.id} 
+                          stroke={trait.color} 
+                          strokeWidth={2} 
+                          dot={false}
+                          activeDot={{ r: 4, strokeWidth: 0 }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  )}
                 </div>
               </div>
             );
@@ -383,22 +399,24 @@ export function TrendsView({ reports, onViewReport, onDeleteReport, initialViewM
             <h3 className="text-lg font-semibold text-slate-900">Sentiment Over Time (Mood Fluctuations)</h3>
           </div>
           <div className="h-[300px] w-full relative bg-white border border-slate-200 rounded-xl shadow-sm p-4 mt-2">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart 
-                data={chartData} 
-                margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                <XAxis dataKey="shortDate" stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} domain={[0, 100]} />
-                <Tooltip 
-                  content={<CustomChartTooltip />}
-                  cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }}
-                  wrapperStyle={{ zIndex: 100 }}
-                />
-                <Line connectNulls type="monotone" dataKey="sentiment" name="Sentiment / Readiness" stroke="#3b82f6" strokeWidth={2.5} activeDot={{ r: 6 }} dot={{ r: 4, fill: '#0a0a0a', strokeWidth: 2 }} />
-              </LineChart>
-            </ResponsiveContainer>
+            {mounted && (
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                <LineChart 
+                  data={chartData} 
+                  margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                  <XAxis dataKey="shortDate" stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} domain={[0, 100]} />
+                  <Tooltip 
+                    content={<CustomChartTooltip />}
+                    cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }}
+                    wrapperStyle={{ zIndex: 100 }}
+                  />
+                  <Line connectNulls type="monotone" dataKey="sentiment" name="Sentiment / Readiness" stroke="#3b82f6" strokeWidth={2.5} activeDot={{ r: 6 }} dot={{ r: 4, fill: '#0a0a0a', strokeWidth: 2 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
@@ -408,24 +426,26 @@ export function TrendsView({ reports, onViewReport, onDeleteReport, initialViewM
             <span className="text-xs text-slate-500 font-medium">Firebase Data Synchronized</span>
           </div>
           <div className="h-[320px] w-full relative bg-white border border-slate-200 rounded-xl shadow-sm p-4 mt-2">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart 
-                data={chartData} 
-                margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                <XAxis dataKey="shortDate" stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis yAxisId="left" stroke="#3b82f6" fontSize={11} tickLine={false} axisLine={false} domain={[0, 100]} />
-                <YAxis yAxisId="right" orientation="right" stroke="#8b5cf6" fontSize={11} tickLine={false} axisLine={false} domain={[0, 150]} />
-                <Tooltip 
-                  content={<BiometricChartTooltip />}
-                  cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }}
-                  wrapperStyle={{ zIndex: 100 }}
-                />
-                <Line yAxisId="left" connectNulls type="monotone" dataKey="readinessScore" name="Readiness Score" stroke="#3b82f6" strokeWidth={2.5} activeDot={{ r: 6 }} dot={{ r: 4, fill: '#3b82f6', strokeWidth: 2 }} />
-                <Line yAxisId="right" connectNulls type="monotone" dataKey="hrvBalanceMs" name="HRV Balance (ms)" stroke="#8b5cf6" strokeWidth={2.5} activeDot={{ r: 6 }} dot={{ r: 4, fill: '#8b5cf6', strokeWidth: 2 }} />
-              </LineChart>
-            </ResponsiveContainer>
+            {mounted && (
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                <LineChart 
+                  data={chartData} 
+                  margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                  <XAxis dataKey="shortDate" stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} />
+                  <YAxis yAxisId="left" stroke="#3b82f6" fontSize={11} tickLine={false} axisLine={false} domain={[0, 100]} />
+                  <YAxis yAxisId="right" orientation="right" stroke="#8b5cf6" fontSize={11} tickLine={false} axisLine={false} domain={[0, 150]} />
+                  <Tooltip 
+                    content={<BiometricChartTooltip />}
+                    cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }}
+                    wrapperStyle={{ zIndex: 100 }}
+                  />
+                  <Line yAxisId="left" connectNulls type="monotone" dataKey="readinessScore" name="Readiness Score" stroke="#3b82f6" strokeWidth={2.5} activeDot={{ r: 6 }} dot={{ r: 4, fill: '#3b82f6', strokeWidth: 2 }} />
+                  <Line yAxisId="right" connectNulls type="monotone" dataKey="hrvBalanceMs" name="HRV Balance (ms)" stroke="#8b5cf6" strokeWidth={2.5} activeDot={{ r: 6 }} dot={{ r: 4, fill: '#8b5cf6', strokeWidth: 2 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </div>
 
           <div className="mt-4 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 border border-blue-100/80 rounded-xl p-6 shadow-sm">
@@ -574,7 +594,7 @@ export function TrendsView({ reports, onViewReport, onDeleteReport, initialViewM
                    <div className="flex flex-col items-center justify-center p-8 bg-white/30 rounded-xl border border-slate-200/50">
                       <div className="h-[500px] w-full max-w-2xl relative flex flex-col items-center justify-center my-6">
                         <div className="w-full h-full relative">
-                           <ResponsiveContainer width="100%" height="100%">
+                           <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                               <RadarChart cx="50%" cy="50%" outerRadius="75%" data={comparisonData}>
                                  <defs>
                                    <filter id="glowA" x="-20%" y="-20%" width="140%" height="140%">

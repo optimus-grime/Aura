@@ -114,7 +114,9 @@ export default function App() {
     };
   }, [dailyReminderEnabled]);
 
-  // Derived mood for RobotFace
+  const todayDateKey = new Date().toISOString().split('T')[0];
+  const todaysReports = savedReports.filter(rp => (rp.logDate || rp.date.split('T')[0]) === todayDateKey);
+  const latestTodayReport = todaysReports.length > 0 ? todaysReports[0].report : (savedReports.length > 0 ? savedReports[0].report : null);
   let currentMood: 'neutral' | 'calm' | 'energetic' | 'anxious' = 'neutral';
   if (savedReports && savedReports.length > 0) {
     const latest = savedReports[0].report;
@@ -346,6 +348,14 @@ export default function App() {
            </div>
         )}
       </AnimatePresence>
+
+      {/* Subtle Offline Badge */}
+      {!isOnline && (
+        <div className="absolute top-4 left-4 z-40 bg-amber-500/10 border border-amber-500/30 text-amber-700 px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1.5 backdrop-blur-sm">
+          <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+          <span>Offline Mode</span>
+        </div>
+      )}
 
       {/* Top right auth */}
       <div className="absolute top-4 right-4 z-40">
@@ -616,12 +626,12 @@ export default function App() {
               )}
 
               {activeTab === 'journal' && (
-                <JournalView latestReport={savedReports.length > 0 ? savedReports[0].report : null} />
+                <JournalView latestReport={latestTodayReport} />
               )}
 
               {activeTab === 'daily' && (
                 <DailyChatView 
-                  latestReport={savedReports.length > 0 ? savedReports[0].report : null}
+                  latestReport={latestTodayReport}
                   onAnalyzeChat={async (text, resetChat) => {
                     setIsAnalyzing(true);
                     try {
@@ -650,6 +660,7 @@ export default function App() {
                     }
                   }}
                   isAnalyzing={isAnalyzing}
+                  onSaveReport={saveReport}
                 />
               )}
             </div>
