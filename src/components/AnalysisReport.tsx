@@ -1,7 +1,7 @@
 import { auth } from '../firebase';
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { motion } from 'motion/react';
-import { BrainCircuit, Star, Zap, AlignJustify, MessageCircle, Send, Download, FileText } from 'lucide-react';
+import { BrainCircuit, Star, Zap, AlignJustify, MessageCircle, Send, Download, FileText, ShieldCheck } from 'lucide-react';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
 import { ReportData } from '../types';
 import { toCanvas } from 'html-to-image';
@@ -12,9 +12,10 @@ interface ReportProps {
   onClose: () => void;
   autoDownload?: boolean;
   onDownloadComplete?: () => void;
+  dataPointsCount?: number;
 }
 
-export function AnalysisReport({ report, onClose, autoDownload, onDownloadComplete }: ReportProps) {
+export function AnalysisReport({ report, onClose, autoDownload, onDownloadComplete, dataPointsCount }: ReportProps) {
   const [chatMessage, setChatMessage] = useState('');
   const [chatHistory, setChatHistory] = useState<any[]>([{
     role: 'model', 
@@ -191,6 +192,32 @@ export function AnalysisReport({ report, onClose, autoDownload, onDownloadComple
     { subject: 'Neuroticism', A: report.bigFive.neuroticism || 0, fullMark: 100 },
   ] : [];
 
+  const dataPoints = useMemo(() => {
+    if (typeof dataPointsCount === 'number' && dataPointsCount > 0) {
+      return dataPointsCount;
+    }
+    try {
+      const raw = localStorage.getItem('personality_reports');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.length;
+        }
+      }
+    } catch {
+      // fallback
+    }
+    return 1;
+  }, [dataPointsCount]);
+
+  // Confidence calculation based on data points collected over time
+  const confidenceScore = Math.min(98, Math.round(50 + (1 - Math.exp(-dataPoints / 3.2)) * 48));
+  const confidenceTier = 
+    confidenceScore >= 90 ? 'High Longitudinal Reliability' :
+    confidenceScore >= 80 ? 'Robust Pattern Confidence' :
+    confidenceScore >= 68 ? 'Developing Calibration' :
+    'Preliminary Baseline';
+
   return (
     <motion.div 
       initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -200,7 +227,7 @@ export function AnalysisReport({ report, onClose, autoDownload, onDownloadComple
       <div ref={reportRef} className="pb-4">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-blue-500" />
         
-        <div className="flex justify-between items-start mb-8">
+        <div className="flex justify-between items-start mb-6">
            <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 rounded-full bg-blue-600/20 flex items-center justify-center shrink-0">
                     <BrainCircuit className="w-5 h-5 text-blue-600" />
@@ -231,6 +258,29 @@ export function AnalysisReport({ report, onClose, autoDownload, onDownloadComple
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
              </button>
            </div>
+        </div>
+
+        {/* Subtle Aura Confidence Score Indicator */}
+        <div className="mb-8 p-3.5 bg-slate-50/90 border border-slate-200/80 rounded-2xl">
+          <div className="flex items-center justify-between mb-1.5">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
+              <span className="text-xs font-semibold text-slate-800">Aura Confidence Score</span>
+              <span className="text-[11px] text-slate-400 font-medium">
+                • {dataPoints} {dataPoints === 1 ? 'data point' : 'data points'} logged
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-medium text-slate-500 hidden sm:inline">{confidenceTier}</span>
+              <span className="text-xs font-bold font-mono text-blue-600">{confidenceScore}%</span>
+            </div>
+          </div>
+          <div className="w-full bg-slate-200/70 rounded-full h-1.5 overflow-hidden">
+            <div 
+              className="bg-gradient-to-r from-blue-500 via-indigo-500 to-emerald-500 h-full rounded-full transition-all duration-700 ease-out" 
+              style={{ width: `${confidenceScore}%` }} 
+            />
+          </div>
         </div>
 
       <div className="space-y-8">

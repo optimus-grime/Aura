@@ -676,7 +676,11 @@ export default function App() {
              exit={{ opacity: 0 }}
              className="absolute inset-0 z-50 flex items-center justify-center p-8 bg-white backdrop-blur-sm"
            >
-              <AnalysisReport report={appReport} onClose={() => setShowReport(false)} />
+              <AnalysisReport 
+                report={appReport} 
+                onClose={() => setShowReport(false)} 
+                dataPointsCount={savedReports.length || 1} 
+              />
            </motion.div>
         )}
       </AnimatePresence>

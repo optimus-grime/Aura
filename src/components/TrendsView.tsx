@@ -726,6 +726,7 @@ export function TrendsView({ reports, onViewReport, onDeleteReport, initialViewM
             onClose={() => {}}
             autoDownload={true}
             onDownloadComplete={() => setExportingReportId(null)}
+            dataPointsCount={reports.length}
           />
         </div>
       )}

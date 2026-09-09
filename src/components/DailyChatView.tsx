@@ -1,8 +1,10 @@
 import { auth } from '../firebase';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { MessageCircle, Send, Plus, BarChart3, Clock, RotateCcw, Check, Sparkles, CheckCircle2, TrendingUp, Target } from 'lucide-react';
+import { MessageCircle, Send, Plus, BarChart3, Clock, RotateCcw, Check, Sparkles, CheckCircle2, TrendingUp, Target, BrainCircuit, Sliders } from 'lucide-react';
 import { ReportData } from '../types';
+import { analyzeUserCommunication } from '../lib/adaptiveQuestioning';
+import { AdaptiveQuestioningModal } from './AdaptiveQuestioningModal';
 
 interface DailyChatViewProps {
   latestReport: ReportData | null;
@@ -168,6 +170,33 @@ export function DailyChatView({ latestReport, onAnalyzeChat, isAnalyzing, onSave
   const [tier3, setTier3] = useState<string | null>(null);
   const [chatWarning, setChatWarning] = useState<string | null>(null);
 
+  // Adaptive Questioning System State
+  const [isAdaptiveModalOpen, setIsAdaptiveModalOpen] = useState(false);
+  const [manualPreference, setManualPreference] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem('aura_manual_question_style');
+    } catch {
+      return null;
+    }
+  });
+
+  const handleSelectManualPreference = (pref: string | null) => {
+    setManualPreference(pref);
+    try {
+      if (pref) {
+        localStorage.setItem('aura_manual_question_style', pref);
+      } else {
+        localStorage.removeItem('aura_manual_question_style');
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const adaptiveMetrics = useMemo(() => {
+    return analyzeUserCommunication(chatHistory);
+  }, [chatHistory]);
+
   // Reset handler: Auto-reset Tier 2 and Tier 3 whenever Tier 1 changes
   const handleSelectTier1 = (moodId: string) => {
     setTier1(moodId);
@@ -257,7 +286,8 @@ export function DailyChatView({ latestReport, onAnalyzeChat, isAnalyzing, onSave
           profile: latestReport,
           history: chatHistory.map(h => ({ role: h.role, text: h.text })),
           message: userMsg,
-          mood: selectedMood
+          mood: selectedMood,
+          manualPreference
         }),
       });
       
@@ -876,8 +906,36 @@ export function DailyChatView({ latestReport, onAnalyzeChat, isAnalyzing, onSave
         </div>
 
         {/* Chat Interface */}
-        <div className="bg-white/40 border border-slate-200 backdrop-blur-md rounded-3xl p-8 shadow-xl flex flex-col h-[500px]">
+        <div className="bg-white/40 border border-slate-200 backdrop-blur-md rounded-3xl p-8 shadow-xl flex flex-col h-[540px]">
            
+            {/* Adaptive Questioning Status Bar */}
+            <div className="flex flex-wrap items-center justify-between pb-4 mb-3 border-b border-slate-200/80 gap-2 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-sm shadow-emerald-500/40" />
+                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700 font-sans">
+                  <span>Adaptive Flow:</span>
+                  <span className="text-blue-600 font-bold capitalize">
+                    {manualPreference 
+                      ? `Locked (${manualPreference})` 
+                      : `${adaptiveMetrics.detectedLength} • ${adaptiveMetrics.detectedFocus}`}
+                  </span>
+                </div>
+                <span className="hidden sm:inline-block text-[11px] text-slate-400 font-mono">
+                  ({adaptiveMetrics.avgWordCount} avg words/turn)
+                </span>
+              </div>
+
+              <button
+                id="view-adaptive-system-btn"
+                onClick={() => setIsAdaptiveModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 text-blue-600 hover:text-blue-700 border border-blue-200 hover:border-blue-300 rounded-xl text-xs font-semibold shadow-sm transition-all active:scale-95"
+                title="Explore adaptive questioning examples and accuracy impacts"
+              >
+                <BrainCircuit className="w-3.5 h-3.5 text-blue-600" />
+                <span>Adaptive Engine & Examples</span>
+              </button>
+            </div>
+
             <div className="flex-1 overflow-y-auto space-y-8 pr-2 custom-scrollbar pb-6">
               {chatHistory.map((msg, i) => (
                 <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -930,6 +988,15 @@ export function DailyChatView({ latestReport, onAnalyzeChat, isAnalyzing, onSave
             </div>
             
         </div>
+
+        {/* Adaptive Questioning System Modal */}
+        <AdaptiveQuestioningModal
+          isOpen={isAdaptiveModalOpen}
+          onClose={() => setIsAdaptiveModalOpen(false)}
+          metrics={adaptiveMetrics}
+          manualPreference={manualPreference}
+          onSelectManualPreference={handleSelectManualPreference}
+        />
       </div>
     </motion.div>
   );

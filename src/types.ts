@@ -78,3 +78,46 @@ export interface LayeredInsightData {
   potentialScenarios: string[];
   informedDecisions: string[];
 }
+
+export type ResponseLengthPreference = 'concise' | 'balanced' | 'elaborate';
+export type VocabularyPreference = 'casual' | 'standard' | 'sophisticated';
+export type DirectnessPreference = 'direct' | 'balanced' | 'nuanced';
+export type FocusPreference = 'analytical' | 'balanced' | 'relational';
+
+export interface CommunicationPreference {
+  responseLength: ResponseLengthPreference;
+  vocabulary: VocabularyPreference;
+  directness: DirectnessPreference;
+  focus: FocusPreference;
+}
+
+export interface AdaptiveMetrics {
+  avgWordCount: number;
+  lexicalComplexityScore: number;
+  directnessScore: number;
+  analyticalRatio: number;
+  detectedLength: ResponseLengthPreference;
+  detectedVocabulary: VocabularyPreference;
+  detectedDirectness: DirectnessPreference;
+  detectedFocus: FocusPreference;
+  strategySummary: string;
+}
+
+export interface AdaptiveExample {
+  id: string;
+  title: string;
+  category: string;
+  userArchetype: string;
+  userSampleResponse: string;
+  rigidQuestion: {
+    question: string;
+    flaw: string;
+  };
+  adaptedQuestion: {
+    question: string;
+    advantage: string;
+  };
+  flowImpact: string;
+  analysisAccuracyImpact: string;
+  cognitiveFunctionsTargeted: string[];
+}

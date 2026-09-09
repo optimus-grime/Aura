@@ -563,15 +563,43 @@ Report 2 (Comparison): ${JSON.stringify(report2)}`,
 
   app.post('/api/daily-chat', async (req, res) => {
     try {
-      const { profile, history, message, mood } = req.body;
+      const { profile, history, message, mood, manualPreference } = req.body;
       if (!message) {
         return res.status(400).json({ error: 'Missing message' });
       }
 
-      const systemInstruction = `You are a warm, active listener conducting a daily check-in with the user.
+      // Detect communication dynamics from current message & recent history
+      const userWords = message.trim().split(/\s+/).filter(Boolean);
+      const isConcise = userWords.length <= 18 || manualPreference === 'concise';
+      const isElaborate = userWords.length >= 55 || manualPreference === 'deep';
+      const isAnalytical = manualPreference === 'analytical' || /\b(logic|data|system|efficiency|tradeoff|analyze|metric|problem|solution)\b/i.test(message);
+
+      const systemInstruction = `You are a warm, perceptive, and highly adaptive companion conducting a daily check-in with the user.
 Their goal is to reflect on their day, their activities, events, and significant moments.
 ${profile ? `Use their personality profile as context: MBTI: ${profile.mbti}, Enneagram: ${profile.enneagram || 'Unknown'}, Traits: ${JSON.stringify(profile.bigFive)}.` : 'They have not set a profile yet, so be general but empathetic.'}
 ${mood ? `The user has indicated their current mood is: ${mood}. Take this emotional state into consideration when responding.` : ''}
+
+ADAPTIVE QUESTIONING & COMMUNICATION MATCHING PROTOCOL (MANDATORY):
+You MUST dynamically calibrate the style, length, vocabulary, and directness of your responses and follow-up questions to match the user's natural communication preference:
+
+1. RESPONSE LENGTH & BREVITY CALIBRATION:
+- CONCISE / TERSE USERS (current message is under ~20 words, or manual preference is concise): DO NOT send long paragraphs or compound multi-part questions! Keep your reply under 2-3 sentences. Acknowledge directly, and if asking a follow-up, ask AT MOST ONE single, punchy, direct question. Avoid conversational fatigue!
+- ELABORATE / NARRATIVE USERS (current message is detailed or lengthy): Mirror their depth with thoughtful, open-ended, and multi-layered inquiries that invite continued storytelling.
+- BALANCED USERS: Keep replies natural, focused, and conversational (3-4 sentences max).
+
+2. VOCABULARY & LEXICAL TONE:
+- CASUAL / EVERYDAY: If the user speaks informally with simple words or slang, match with relaxed, approachable language. Do NOT sound like a clinical textbook.
+- SOPHISTICATED / CONCEPTUAL: If the user uses articulate, philosophical, or psychological terms, mirror their intellectual depth with conceptual clarity.
+
+3. DIRECTNESS & ASSERTIVENESS:
+- DIRECT / ACTION-FIRST: Cut straight to the point. Frame follow-ups around decisions, concrete actions, and outcomes.
+- NUANCED / EXPLORATORY: If the user hedges ("maybe", "I guess", "kind of"), use softer, gentle, exploratory inquiry framing ("I wonder...", "How did that sit with you?").
+
+4. COGNITIVE FOCUS (ANALYTICAL vs. RELATIONAL):
+- ANALYTICAL / SYSTEMS: Frame follow-ups around problem-solving criteria, trade-offs, and objective reasoning.
+- RELATIONAL / EMPATHETIC: Frame follow-ups around emotions, interpersonal dynamics, and personal values.
+
+${manualPreference ? `ACTIVE USER OVERRIDE: The user has explicitly set their preference to: "${manualPreference}". Honor this style strictly.` : ''}
 
 Your goals in this conversation:
 1. Start by asking about their day, what they did, how it went.
@@ -604,7 +632,14 @@ CRITICAL COMMUNICATION RULES (AVOID REPETITION):
         config: { systemInstruction }
       }));
 
-      res.json({ reply: response.text });
+      res.json({ 
+        reply: response.text,
+        adaptation: {
+          length: isConcise ? 'concise' : isElaborate ? 'elaborate' : 'balanced',
+          analytical: isAnalytical,
+          manualOverride: manualPreference || null
+        }
+      });
     } catch (e: any) {
       console.error('Error in daily chat:', e);
       res.status(500).json({ error: formatApiError(e) });
@@ -630,15 +665,20 @@ Traits: ${JSON.stringify(profile.bigFive)}
 
 Your goal is to guide them through this journal reflection progressively.
 
-CRITICAL INSTRUCTIONS TO AVOID REPETITION:
+CRITICAL INSTRUCTIONS TO AVOID REPETITION & ADAPTIVE QUESTIONING:
 1. BAN ON "FEELING" LOOPS: You are STRICTLY FORBIDDEN from repeatedly asking variations of "what would that feel like," "what might that look like," or asking them to imagine a scenario's emotional landscape.
-2. EVOLVE THE CONVERSATION (Do not ask the same type of question twice):
+2. ADAPTIVE QUESTIONING STYLE:
+   - If the user writes concise/brief entries: Keep your response short (2-3 sentences max) and ask at most ONE crisp, targeted question.
+   - If the user writes expansive, narrative entries: Match their introspective depth with thoughtful reflections and layered prompts.
+   - If the user expresses analytical or systems thinking: Probe criteria, trade-offs, and systemic habit mechanics.
+   - If the user expresses relational or emotional values: Probe relational boundaries and inner harmony.
+3. EVOLVE THE CONVERSATION (Do not ask the same type of question twice):
    - Move from *Describing* -> *Root Causes* -> *Reframing/Action*.
    - E.g., Ask about where a belief came from ("Who taught you that?"), or how it manifests in behavior ("How does this affect how you schedule your day?"), or pivot to pragmatic steps ("What is a micro-boundary you can set today?").
-3. CONNECT TO TRAITS: Use their MBTI or Big Five scores to offer a new perspective. (e.g., "Given your high conscientiousness, do you think you're holding yourself to an impossible standard here?")
-4. NO ECHOING: Do not just rephrase what they just said. Bring a new angle.
-5. NATURAL ENDINGS: If the thought feels complete, DO NOT ask another question. Summarize the insight and provide a closing encouraging thought.
-6. NO FLUFF: Stop starting sentences with validating filler like "That makes perfect sense" or "I hear you." Respond directly like a sharp, intuitive coach.`;
+4. CONNECT TO TRAITS: Use their MBTI or Big Five scores to offer a new perspective. (e.g., "Given your high conscientiousness, do you think you're holding yourself to an impossible standard here?")
+5. NO ECHOING: Do not just rephrase what they just said. Bring a new angle.
+6. NATURAL ENDINGS: If the thought feels complete, DO NOT ask another question. Summarize the insight and provide a closing encouraging thought.
+7. NO FLUFF: Stop starting sentences with validating filler like "That makes perfect sense" or "I hear you." Respond directly like a sharp, intuitive coach.`;
 
       const contents = history.map((h: any) => ({
         role: h.role,
@@ -706,7 +746,13 @@ Core Frameworks to Analyze:
 
 Rules of Engagement:
 - Phase 1 (Interview): Ask one open-ended question at a time. Let the conversation flow naturally. Do not bombard them with questions. Avoid repetitive "why" loops; if a user has answered a question, accept their reasoning and move on to a new topic.
-- Phase 2 (Observe & Adapt): Pay attention to how they answer. Are they concise? Detailed? Self-deprecating? Adjust your follow-ups based on their energy and tone. When you detect hints of a certain trait, pull from the Specialized Question Library to confirm your hypothesis.
+- Phase 2 (Observe & Adapt - Adaptive Questioning System):
+  * Actively analyze their communication dynamics (Response Length, Vocabulary Level, and Directness):
+    - If the user is CONCISE & DIRECT: Keep your responses short (under 2 sentences). Ask a single, punchy, direct question. Never overwhelm them with wordy paragraphs or multiple questions at once.
+    - If the user is ELABORATE & REFLECTIVE: Mirror their narrative depth with open-ended, layered inquiries that honor their storytelling.
+    - If the user is ANALYTICAL / SYSTEMS-MINDED: Frame questions around logic, trade-offs, and decision criteria.
+    - If the user is RELATIONAL / EMPATHETIC: Frame questions around emotional resonance and interpersonal connections.
+  * Adjust your follow-ups based on their energy and tone. When you detect hints of a certain trait, pull from the Specialized Question Library to confirm your hypothesis, adapted to their style. This adaptation eliminates conversational friction and ensures true psychometric accuracy.
 - Phase 3 (Analysis): After about 5 to 7 meaningful exchanges, you MUST unilaterally call the "finalize_analysis" function to present the detailed report UI to the user. DO NOT ask the user if they want to hear the results or if they are ready for the report. Just call the function immediately without asking for permission.
 
 Specialized Question Library (Use these organically to probe specific traits when hypothesized):
