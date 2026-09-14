@@ -59,29 +59,38 @@ const TIER1_MOODS = [
 ];
 
 const TIER2_OPTIONS: Record<string, string[]> = {
-  happy: ["In the zone", "On top of things", "Feeling unstoppable"],
+  happy: ["In the zone", "On top of things", "Feeling good"],
   relaxed: ["Cruising along", "At ease", "Just chilling"],
-  sad: ["Running on empty", "Feeling weighed down", "Need a break"],
-  anxious: ["On edge", "Racing thoughts", "Feeling unprepared"],
-  angry: ["Feeling attacked", "At boiling point", "Pushed too far"]
+  sad: ["Feeling down", "Drained", "Swamped", "Need a break"],
+  anxious: ["Stressed", "Overthinking", "Restless", "Feeling unprepared"],
+  angry: ["Frustrated", "Heated", "Pushed too far"]
 };
 
 const TIER3_VOCABULARY: Record<string, string[]> = {
-  "In the zone": ["Focused", "Inspired", "Energized", "Motivated", "Ambitious", "Accomplished"],
-  "On top of things": ["Confident", "Empowered", "Pleased", "Optimistic", "Satisfied", "Proud"],
-  "Feeling unstoppable": ["Invincible", "Triumphant", "Elated", "Ecstatic", "Exuberant", "Radiant"],
-  "Cruising along": ["Carefree", "Mellow", "Content", "Lighthearted", "Peaceful", "Serene"],
-  "At ease": ["Composed", "Settled", "Tranquil", "Comforted", "Unhurried", "Restful"],
-  "Just chilling": ["Unbothered", "Placid", "Untroubled", "Soothed", "Easygoing", "Quiet"],
-  "Running on empty": ["Depleted", "Drained", "Exhausted", "Weary", "Lethargic", "Spent"],
-  "Feeling weighed down": ["Melancholic", "Despondent", "Gloomy", "Heartbroken", "Sorrowful", "Heavy"],
-  "Need a break": ["Deflated", "Blue", "Glum", "Dejected", "Downcast", "Disheartened"],
-  "On edge": ["Antsy", "Uneasy", "Edgy", "Jittery", "Nervous", "Apprehensive"],
-  "Racing thoughts": ["Panicked", "Worried", "Fearful", "Bewildered", "Overstimulated", "Distracted"],
-  "Feeling unprepared": ["Hesitant", "Insecure", "Uncertain", "Vulnerable", "Timid", "Doubtful"],
-  "Feeling attacked": ["Defensive", "Resentful", "Bitter", "Aggrieved", "Indignant", "Hostile"],
-  "At boiling point": ["Furious", "Enraged", "Incensed", "Infuriated", "Irate", "Outraged"],
-  "Pushed too far": ["Frustrated", "Irritated", "Agitated", "Exasperated", "Annoyed", "Cranky"]
+  "In the zone": ["Focused", "Inspired", "Energized", "Motivated", "Productive", "Accomplished"],
+  "On top of things": ["Confident", "Organized", "Pleased", "Optimistic", "Satisfied", "Proud"],
+  "Feeling good": ["Upbeat", "Cheerful", "Excited", "Grateful", "Thriving", "Radiant"],
+  "Feeling unstoppable": ["Upbeat", "Cheerful", "Excited", "Grateful", "Thriving", "Radiant"],
+  "Cruising along": ["Carefree", "Mellow", "Content", "Steady", "Peaceful", "Balanced"],
+  "At ease": ["Composed", "Settled", "Calm", "Comfortable", "Unhurried", "Restful"],
+  "Just chilling": ["Unbothered", "Relaxed", "Untroubled", "Casual", "Easygoing", "Quiet"],
+  "Feeling down": ["Down", "Blue", "Discouraged", "Gloomy", "Low", "Heavy"],
+  "Drained": ["Drained", "Exhausted", "Depleted", "Weary", "Spent", "Burdened"],
+  "Swamped": ["Swamped", "Overwhelmed", "Stuck", "Overloaded", "Stretched thin", "Bogged down"],
+  "Need a break": ["Deflated", "Burned out", "Unmotivated", "Faded", "Sluggish", "Off-track"],
+  "Running on empty": ["Drained", "Exhausted", "Depleted", "Weary", "Spent", "Burdened"],
+  "Feeling weighed down": ["Down", "Blue", "Discouraged", "Heavy", "Swamped", "Burdened"],
+  "Stressed": ["Stressed", "Pressured", "Tense", "Frazzled", "Strained", "Overburdened"],
+  "Overthinking": ["Overthinking", "Worried", "Second-guessing", "Distracted", "Uneasy", "Unsettled"],
+  "Restless": ["Restless", "On edge", "Jittery", "Nervous", "Antsy", "Impatient"],
+  "On edge": ["Restless", "On edge", "Jittery", "Nervous", "Antsy", "Impatient"],
+  "Racing thoughts": ["Overthinking", "Worried", "Distracted", "Uneasy", "Unsettled", "Frazzled"],
+  "Feeling unprepared": ["Uncertain", "Hesitant", "Doubtful", "Hesitating", "Flustered", "Unready"],
+  "Frustrated": ["Frustrated", "Annoyed", "Irritated", "Agitated", "Exasperated", "Bothered"],
+  "Heated": ["Upset", "Ticked off", "Testy", "Grumpy", "Short-tempered", "Cross"],
+  "Pushed too far": ["Fed up", "Over it", "Done", "Resentful", "Snappy", "Impatient"],
+  "Feeling attacked": ["Defensive", "Resentful", "Bothered", "Heated", "Snappy", "Cross"],
+  "At boiling point": ["Heated", "Fed up", "Ticked off", "Over it", "Upset", "Short-tempered"]
 };
 
 const CONTAINER_AMBIENT_STYLES: Record<string, { bg: string; border: string; shadow: string }> = {
@@ -170,6 +179,74 @@ export function DailyChatView({ latestReport, onAnalyzeChat, isAnalyzing, onSave
   const [tier3, setTier3] = useState<string | null>(null);
   const [chatWarning, setChatWarning] = useState<string | null>(null);
 
+  // Custom Tier 2 & Tier 3 words stored in localStorage
+  const [customTier2Map, setCustomTier2Map] = useState<Record<string, string[]>>(() => {
+    try {
+      const saved = localStorage.getItem('aura_custom_tier2_words');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const [customTier3Map, setCustomTier3Map] = useState<Record<string, string[]>>(() => {
+    try {
+      const saved = localStorage.getItem('aura_custom_tier3_words');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  // Dynamic user input state
+  const [isAddingCustomTier2, setIsAddingCustomTier2] = useState(false);
+  const [customTier2Input, setCustomTier2Input] = useState('');
+  const [isAddingCustomTier3, setIsAddingCustomTier3] = useState(false);
+  const [customTier3Input, setCustomTier3Input] = useState('');
+
+  const activeTier2Options = useMemo(() => {
+    if (!tier1) return [];
+    const defaults = TIER2_OPTIONS[tier1] || [];
+    const customs = customTier2Map[tier1] || [];
+    return Array.from(new Set([...defaults, ...customs]));
+  }, [tier1, customTier2Map]);
+
+  const activeTier3Options = useMemo(() => {
+    if (!tier2) return [];
+    const defaults = TIER3_VOCABULARY[tier2] || [];
+    const customs = customTier3Map[tier2] || [];
+    return Array.from(new Set([...defaults, ...customs]));
+  }, [tier2, customTier3Map]);
+
+  const handleAddCustomTier2 = () => {
+    const trimmed = customTier2Input.trim();
+    if (!trimmed || !tier1) return;
+    const existing = customTier2Map[tier1] || [];
+    if (!existing.includes(trimmed)) {
+      const updated = { ...customTier2Map, [tier1]: [...existing, trimmed] };
+      setCustomTier2Map(updated);
+      localStorage.setItem('aura_custom_tier2_words', JSON.stringify(updated));
+    }
+    setTier2(trimmed);
+    setTier3(null);
+    setCustomTier2Input('');
+    setIsAddingCustomTier2(false);
+  };
+
+  const handleAddCustomTier3 = () => {
+    const trimmed = customTier3Input.trim();
+    if (!trimmed || !tier2) return;
+    const existing = customTier3Map[tier2] || [];
+    if (!existing.includes(trimmed)) {
+      const updated = { ...customTier3Map, [tier2]: [...existing, trimmed] };
+      setCustomTier3Map(updated);
+      localStorage.setItem('aura_custom_tier3_words', JSON.stringify(updated));
+    }
+    setTier3(trimmed);
+    setCustomTier3Input('');
+    setIsAddingCustomTier3(false);
+  };
+
   // Adaptive Questioning System State
   const [isAdaptiveModalOpen, setIsAdaptiveModalOpen] = useState(false);
   const [manualPreference, setManualPreference] = useState<string | null>(() => {
@@ -202,12 +279,26 @@ export function DailyChatView({ latestReport, onAnalyzeChat, isAnalyzing, onSave
     setTier1(moodId);
     setTier2(null);
     setTier3(null);
+    setIsAddingCustomTier2(false);
+    setIsAddingCustomTier3(false);
+    setCustomTier2Input('');
+    setCustomTier3Input('');
   };
 
   useEffect(() => {
     setTier2(null);
     setTier3(null);
+    setIsAddingCustomTier2(false);
+    setIsAddingCustomTier3(false);
+    setCustomTier2Input('');
+    setCustomTier3Input('');
   }, [tier1]);
+
+  useEffect(() => {
+    setTier3(null);
+    setIsAddingCustomTier3(false);
+    setCustomTier3Input('');
+  }, [tier2]);
 
   useEffect(() => {
     localStorage.setItem('daily_chat_history', JSON.stringify(chatHistory));
@@ -461,6 +552,10 @@ export function DailyChatView({ latestReport, onAnalyzeChat, isAnalyzing, onSave
     setTier1(null);
     setTier2(null);
     setTier3(null);
+    setIsAddingCustomTier2(false);
+    setIsAddingCustomTier3(false);
+    setCustomTier2Input('');
+    setCustomTier3Input('');
     localStorage.setItem('last_checkin_date', new Date().toLocaleDateString());
     setConfirmReset(false);
   };
@@ -815,7 +910,7 @@ export function DailyChatView({ latestReport, onAnalyzeChat, isAnalyzing, onSave
 
               {/* Tier 2 (Dynamic Refinements) */}
               <AnimatePresence>
-                {tier1 && TIER2_OPTIONS[tier1] && (
+                {tier1 && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
@@ -823,14 +918,17 @@ export function DailyChatView({ latestReport, onAnalyzeChat, isAnalyzing, onSave
                     className="overflow-hidden border-t border-slate-100 pt-5 space-y-3"
                   >
                     <span className="text-sm font-bold text-slate-700 block uppercase tracking-wider font-mono">Tier 2: Refine the Feeling</span>
-                    <div className="flex flex-wrap gap-2">
-                      {TIER2_OPTIONS[tier1].map(option => {
+                    <div className="flex flex-wrap items-center gap-2">
+                      {activeTier2Options.map(option => {
                         const isSelected = tier2 === option;
                         return (
                           <button
                             key={option}
                             id={`mood-tier2-${option.replace(/\s+/g, '-').toLowerCase()}`}
-                            onClick={() => setTier2(option)}
+                            onClick={() => {
+                              setTier2(option);
+                              setIsAddingCustomTier2(false);
+                            }}
                             className={`px-4 py-2 rounded-xl text-sm font-semibold border transition-all duration-200 flex items-center gap-2 ${
                               isSelected
                                 ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-600/15'
@@ -842,6 +940,56 @@ export function DailyChatView({ latestReport, onAnalyzeChat, isAnalyzing, onSave
                           </button>
                         );
                       })}
+
+                      {/* Add Custom Tier 2 Option */}
+                      {isAddingCustomTier2 ? (
+                        <div className="flex items-center gap-1.5 bg-white border border-blue-400 rounded-xl px-2.5 py-1 shadow-sm">
+                          <input
+                            type="text"
+                            autoFocus
+                            placeholder="Custom feeling..."
+                            value={customTier2Input}
+                            onChange={(e) => setCustomTier2Input(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleAddCustomTier2();
+                              } else if (e.key === 'Escape') {
+                                setIsAddingCustomTier2(false);
+                                setCustomTier2Input('');
+                              }
+                            }}
+                            className="text-sm font-medium text-slate-800 outline-none w-36 sm:w-44 bg-transparent placeholder:text-slate-400"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleAddCustomTier2}
+                            className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-sm"
+                          >
+                            Add
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsAddingCustomTier2(false);
+                              setCustomTier2Input('');
+                            }}
+                            className="text-slate-400 hover:text-slate-600 text-xs px-1"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          id="add-custom-tier2-btn"
+                          onClick={() => setIsAddingCustomTier2(true)}
+                          className="px-3.5 py-2 rounded-xl text-sm font-medium border border-dashed border-slate-300 hover:border-blue-400 bg-white hover:bg-blue-50/50 text-slate-600 hover:text-blue-600 transition-all flex items-center gap-1.5"
+                        >
+                          <Plus className="w-4 h-4" />
+                          <span>+ Add Custom</span>
+                        </button>
+                      )}
                     </div>
                   </motion.div>
                 )}
@@ -849,7 +997,7 @@ export function DailyChatView({ latestReport, onAnalyzeChat, isAnalyzing, onSave
 
               {/* Tier 3 (Dynamic Vocabulary Choices & Save Log) */}
               <AnimatePresence>
-                {tier2 && TIER3_VOCABULARY[tier2] && (
+                {tier2 && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
@@ -861,14 +1009,17 @@ export function DailyChatView({ latestReport, onAnalyzeChat, isAnalyzing, onSave
                       <p className="text-xs text-slate-400 font-sans">Tap the word that matches your state closest:</p>
                     </div>
 
-                    <div className="flex flex-wrap gap-2">
-                      {TIER3_VOCABULARY[tier2].map(word => {
+                    <div className="flex flex-wrap items-center gap-2">
+                      {activeTier3Options.map(word => {
                         const isSelected = tier3 === word;
                         return (
                           <button
                             key={word}
                             id={`mood-tier3-${word.toLowerCase()}`}
-                            onClick={() => setTier3(word)}
+                            onClick={() => {
+                              setTier3(word);
+                              setIsAddingCustomTier3(false);
+                            }}
                             className={`px-3.5 py-1.5 rounded-lg text-sm font-medium border transition-all duration-200 ${
                               isSelected
                                 ? 'bg-indigo-50 border-indigo-500 text-indigo-700 font-bold ring-2 ring-indigo-500/20'
@@ -879,6 +1030,56 @@ export function DailyChatView({ latestReport, onAnalyzeChat, isAnalyzing, onSave
                           </button>
                         );
                       })}
+
+                      {/* Add Custom Tier 3 Option */}
+                      {isAddingCustomTier3 ? (
+                        <div className="flex items-center gap-1.5 bg-white border border-indigo-400 rounded-xl px-2.5 py-1 shadow-sm">
+                          <input
+                            type="text"
+                            autoFocus
+                            placeholder="Custom descriptor..."
+                            value={customTier3Input}
+                            onChange={(e) => setCustomTier3Input(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleAddCustomTier3();
+                              } else if (e.key === 'Escape') {
+                                setIsAddingCustomTier3(false);
+                                setCustomTier3Input('');
+                              }
+                            }}
+                            className="text-sm font-medium text-slate-800 outline-none w-36 sm:w-44 bg-transparent placeholder:text-slate-400"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleAddCustomTier3}
+                            className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-sm"
+                          >
+                            Add
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsAddingCustomTier3(false);
+                              setCustomTier3Input('');
+                            }}
+                            className="text-slate-400 hover:text-slate-600 text-xs px-1"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          id="add-custom-tier3-btn"
+                          onClick={() => setIsAddingCustomTier3(true)}
+                          className="px-3 py-1.5 rounded-lg text-sm font-medium border border-dashed border-slate-300 hover:border-indigo-400 bg-white hover:bg-indigo-50/50 text-slate-600 hover:text-indigo-600 transition-all flex items-center gap-1.5"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>+ Add Custom</span>
+                        </button>
+                      )}
                     </div>
 
                     {/* Submit Section */}
