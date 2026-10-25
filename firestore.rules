@@ -24,18 +24,6 @@ service cloud.firestore {
              data.report is map;
     }
 
-    function isValidSyncCurrent(data) {
-      return data.keys().hasAll(['readinessScore', 'hrvBalanceMs', 'sleepHours', 'restingHeartRateBpm', 'statusLabel', 'lastSyncedAt']) &&
-             data.keys().size() == 6 &&
-             data.readinessScore is number &&
-             data.hrvBalanceMs is number &&
-             data.sleepHours is number &&
-             data.restingHeartRateBpm is number &&
-             data.statusLabel is string &&
-             data.statusLabel.size() <= 100 &&
-             data.lastSyncedAt == request.time;
-    }
-
     // Reports matching
     match /users/{userId}/reports/{reportId} {
       // Security Constraints:
@@ -52,14 +40,6 @@ service cloud.firestore {
                     userId == request.auth.uid;
                     
       allow update: if false; // Reports are immutable once generated
-    }
-
-    // Sync current metrics matching
-    match /users/{userId}/sync/current {
-      allow get, list: if isSignedIn() && isValidId(userId) && userId == request.auth.uid;
-      allow create, update: if isSignedIn() && isValidId(userId) && userId == request.auth.uid &&
-                            isValidSyncCurrent(incoming());
-      allow delete: if isSignedIn() && isValidId(userId) && userId == request.auth.uid;
     }
   }
 }

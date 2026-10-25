@@ -26,30 +26,12 @@
         }
       },
       "required": ["userId", "date", "report", "createdAt"]
-    },
-    "SyncCurrent": {
-      "title": "Current Sync Metrics",
-      "description": "Normalized latest biometric and report metrics for sync bridge",
-      "type": "object",
-      "properties": {
-        "readinessScore": { "type": "number" },
-        "hrvBalanceMs": { "type": "number" },
-        "sleepHours": { "type": "number" },
-        "restingHeartRateBpm": { "type": "number" },
-        "statusLabel": { "type": "string" },
-        "lastSyncedAt": { "type": "number" }
-      },
-      "required": ["readinessScore", "hrvBalanceMs", "sleepHours", "restingHeartRateBpm", "statusLabel", "lastSyncedAt"]
     }
   },
   "firestore": {
     "users/{userId}/reports/{reportId}": {
       "schema": "Report",
       "description": "User's individual reports"
-    },
-    "users/{userId}/sync/current": {
-      "schema": "SyncCurrent",
-      "description": "Latest synced biometric metrics for user"
     }
   }
 }

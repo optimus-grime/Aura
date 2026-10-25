@@ -4,29 +4,6 @@ import { collection, query, orderBy, onSnapshot, setDoc, deleteDoc, doc, serverT
 import { handleFirestoreError, OperationType } from '../lib/firestoreUtils';
 import { SavedReport, ReportData } from '../types';
 
-async function syncLatestMetrics(userId: string, reportData: ReportData) {
-  try {
-    const readinessScore = typeof reportData.readiness?.score === 'number' ? reportData.readiness.score : 70;
-    const hrvBalanceMs = Math.round(40 + readinessScore * 0.4);
-    const sleepHours = parseFloat((6.0 + (readinessScore / 30)).toFixed(1));
-    const restingHeartRateBpm = Math.round(75 - readinessScore * 0.15);
-    const statusLabel = readinessScore >= 75 ? 'Optimal' : readinessScore >= 45 ? 'Balanced' : 'Recovery Needed';
-
-    const syncDocData = {
-      readinessScore,
-      hrvBalanceMs,
-      sleepHours,
-      restingHeartRateBpm,
-      statusLabel,
-      lastSyncedAt: serverTimestamp()
-    };
-
-    await setDoc(doc(db, 'users', userId, 'sync', 'current'), syncDocData);
-  } catch (error) {
-    console.error('Error syncing latest metrics to sync/current:', error);
-  }
-}
-
 export function useFirebaseReports() {
   const [savedReports, setSavedReports] = useState<SavedReport[]>(() => {
     try {
@@ -74,9 +51,6 @@ export function useFirebaseReports() {
       localStorage.setItem('aura_cached_reports', JSON.stringify(reports));
       setLoading(false);
 
-      if (reports.length > 0 && auth.currentUser) {
-        syncLatestMetrics(auth.currentUser.uid, reports[0].report);
-      }
     }, (error) => {
       console.error('Firestore snapshot error, falling back to local cache:', error);
       try {
@@ -123,7 +97,6 @@ export function useFirebaseReports() {
         createdAt: serverTimestamp()
       };
       await setDoc(doc(db, 'users', auth.currentUser.uid, 'reports', reportId), firestoreDoc);
-      await syncLatestMetrics(auth.currentUser.uid, newReportData);
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, `users/${auth.currentUser?.uid}/reports`);
     }

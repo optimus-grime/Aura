@@ -57,7 +57,7 @@ const CustomChartTooltip = ({ active, payload }: any) => {
   return null;
 };
 
-const BiometricChartTooltip = ({ active, payload }: any) => {
+const ReadinessChartTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
@@ -67,10 +67,6 @@ const BiometricChartTooltip = ({ active, payload }: any) => {
           <div className="flex justify-between items-center text-base">
             <span className="text-blue-600 font-medium">Readiness Score</span>
             <span className="text-slate-900 font-mono font-bold">{data.readinessScore}/100</span>
-          </div>
-          <div className="flex justify-between items-center text-base">
-            <span className="text-purple-600 font-medium">HRV Balance</span>
-            <span className="text-slate-900 font-mono font-bold">{data.hrvBalanceMs} ms</span>
           </div>
         </div>
         {data.summary && (
@@ -185,13 +181,11 @@ export function TrendsView({ reports, onViewReport, onDeleteReport, initialViewM
     const displayDateObj = new Date(displayDateStr);
     const shortDate = `${String(displayDateObj.getMonth() + 1).padStart(2, '0')}/${String(displayDateObj.getDate()).padStart(2, '0')}`;
     const readinessScore = rp.report.readiness?.score || 70;
-    const hrvBalanceMs = (rp.report as any).hrvBalanceMs || Math.round(40 + readinessScore * 0.4);
     return {
       date: displayDateObj.toLocaleDateString(),
       shortDate,
       time: dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       readinessScore,
-      hrvBalanceMs,
       openness: rp.report.bigFive?.openness || 0,
       conscientiousness: rp.report.bigFive?.conscientiousness || 0,
       extraversion: rp.report.bigFive?.extraversion || 0,
@@ -422,8 +416,7 @@ export function TrendsView({ reports, onViewReport, onDeleteReport, initialViewM
 
         <div className="mt-12 mb-6">
           <div className="flex items-center justify-between mb-2 flex-wrap gap-4">
-            <h3 className="text-lg font-semibold text-slate-900">Readiness Score & HRV Balance (Last 30 Days)</h3>
-            <span className="text-xs text-slate-500 font-medium">Firebase Data Synchronized</span>
+            <h3 className="text-lg font-semibold text-slate-900">Readiness Score (Last 30 Days)</h3>
           </div>
           <div className="h-[320px] w-full relative bg-white border border-slate-200 rounded-xl shadow-sm p-4 mt-2">
             {mounted && (
@@ -434,15 +427,13 @@ export function TrendsView({ reports, onViewReport, onDeleteReport, initialViewM
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
                   <XAxis dataKey="shortDate" stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} />
-                  <YAxis yAxisId="left" stroke="#3b82f6" fontSize={11} tickLine={false} axisLine={false} domain={[0, 100]} />
-                  <YAxis yAxisId="right" orientation="right" stroke="#8b5cf6" fontSize={11} tickLine={false} axisLine={false} domain={[0, 150]} />
+                  <YAxis stroke="#3b82f6" fontSize={11} tickLine={false} axisLine={false} domain={[0, 100]} />
                   <Tooltip 
-                    content={<BiometricChartTooltip />}
+                    content={<ReadinessChartTooltip />}
                     cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }}
                     wrapperStyle={{ zIndex: 100 }}
                   />
-                  <Line yAxisId="left" connectNulls type="monotone" dataKey="readinessScore" name="Readiness Score" stroke="#3b82f6" strokeWidth={2.5} activeDot={{ r: 6 }} dot={{ r: 4, fill: '#3b82f6', strokeWidth: 2 }} />
-                  <Line yAxisId="right" connectNulls type="monotone" dataKey="hrvBalanceMs" name="HRV Balance (ms)" stroke="#8b5cf6" strokeWidth={2.5} activeDot={{ r: 6 }} dot={{ r: 4, fill: '#8b5cf6', strokeWidth: 2 }} />
+                  <Line connectNulls type="monotone" dataKey="readinessScore" name="Readiness Score" stroke="#3b82f6" strokeWidth={2.5} activeDot={{ r: 6 }} dot={{ r: 4, fill: '#3b82f6', strokeWidth: 2 }} />
                 </LineChart>
               </ResponsiveContainer>
             )}
@@ -451,25 +442,16 @@ export function TrendsView({ reports, onViewReport, onDeleteReport, initialViewM
           <div className="mt-4 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 border border-blue-100/80 rounded-xl p-6 shadow-sm">
             <h4 className="text-base font-semibold text-slate-900 mb-3 flex items-center gap-2">
               <Info className="w-5 h-5 text-blue-600" />
-              Understanding Your Biometric & Readiness Metrics
+              Understanding Your Readiness Score
             </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-slate-700">
+            <div className="text-sm text-slate-700">
               <div className="bg-white/80 p-4 rounded-lg border border-blue-100 shadow-sm">
                 <div className="flex items-center justify-between mb-1">
                   <span className="font-semibold text-blue-700 text-base">Readiness Score (0–100)</span>
-                  <span className="text-xs font-medium px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full">Primary Vitality</span>
+                  <span className="text-xs font-medium px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full">Aura Vitality</span>
                 </div>
                 <p className="leading-relaxed text-slate-600 mt-1">
                   Evaluates your overall mental and physical preparedness for daily challenges based on your logged sentiment, energy levels, and reflection data. Scores above 75 indicate optimal vitality, 45–74 represent balanced recovery, and lower scores signal a need for rest.
-                </p>
-              </div>
-              <div className="bg-white/80 p-4 rounded-lg border border-purple-100 shadow-sm">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="font-semibold text-purple-700 text-base">HRV Balance (ms)</span>
-                  <span className="text-xs font-medium px-2 py-0.5 bg-purple-100 text-purple-800 rounded-full">Nervous System</span>
-                </div>
-                <p className="leading-relaxed text-slate-600 mt-1">
-                  Heart Rate Variability (HRV) measures the variance in time between each heartbeat in milliseconds (ms). Higher HRV balance indicates a resilient, adaptable autonomic nervous system and strong recovery capacity, while lower values often reflect fatigue or acute stress.
                 </p>
               </div>
             </div>
